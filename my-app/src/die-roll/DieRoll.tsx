@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import './DieRoll.css';
 import dieRollImg from '../die-roll.gif';
+import './crypto-stuff/utils';
+import startRoll from './crypto-stuff/start-roll';
 
 function DieRoll() {
 
     const [guessInputValue, setGuessInputValue] = useState(0);
+    const [error, setError] = useState("");
 
     const handleChange = (e: any) => {
 
@@ -14,6 +17,7 @@ function DieRoll() {
         // Allow empty value for UX (e.g., clearing the input)
         if (inputValue === "") {
             setGuessInputValue(0);
+            setError("");
             return;
         }
 
@@ -22,6 +26,7 @@ function DieRoll() {
         // Validate the value is between 1 and 6
         if (numValue >= 1 && numValue <= 6) {
             setGuessInputValue(numValue);
+            setError("");
         }
     };
 
@@ -39,7 +44,6 @@ function DieRoll() {
                     Guess a number a roll the die to win crypto!
                 </p>
 
-
                 <br />
 
                 <label>
@@ -55,6 +59,7 @@ function DieRoll() {
                 />
 
                 <br />
+                {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
                 <br />
 
                 <button
@@ -71,6 +76,18 @@ function DieRoll() {
                         boxShadow: "0 6px #d17b00",
                         cursor: "pointer",
                         transition: "transform 0.2s, box-shadow 0.2s",
+                    }}
+                    onClick={async (_e: any) => {
+
+                        if (guessInputValue === 0) {
+                            setError("Please enter a number between 1 and 6.");
+                        } else {
+                            setError("");
+                            console.log("Roll button clicked! Guessing: ", guessInputValue);
+
+                            const result = await startRoll(+guessInputValue);
+                        }
+
                     }}
                     onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
                         const button = e.currentTarget; // Explicitly an HTMLButtonElement
