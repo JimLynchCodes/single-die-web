@@ -44,3 +44,17 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+
+
+create a folder named "certs" and navigate into it
+
+created certs with `npm run create-ca` and then `npm run create-cert`
+
+Need to install first with: `npm i -g mkcert`
+
+Then `mkcert create-ca`
+
+then `mkcert create-cert`
+
+

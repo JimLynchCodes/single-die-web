@@ -26,7 +26,7 @@ const ESCROW_SEED = "stateEscrow";
 const COMMITMENT = "finalized" as Commitment;
 
 
-async function startRoll(userGuess: number): Promise<number> {
+async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<number>>): Promise<number> {
 
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
     // console.log({ keypair, connection, program })
@@ -162,7 +162,7 @@ async function startRoll(userGuess: number): Promise<number> {
                 console.log(program);
 
 
-                startRollg(program, wallet.keypair, connection, wallet, userGuess)
+                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult)
             }
             // try {
             //     const greetingAccount = Keypair.generate();
@@ -200,7 +200,7 @@ async function startRoll(userGuess: number): Promise<number> {
 }
 
 /// takes a guess, calls to blockchain, returns the result.
-async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number): Promise<number> {
+async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<number>>): Promise<number> {
     // console.clear();
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
     // console.log("\nSetup...");
@@ -392,7 +392,7 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
                         // signers: [keypair],
                         computeUnitPrice: 75_000,
                         computeUnitLimitMultiple: 1.3,
-                      });
+                    });
 
                     console.log('trying raw send')
 
@@ -414,9 +414,9 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
                     console.log("Guess Transaction Confirmed!  ✅");
 
 
-                    setTimeout(async () => {
+                    // setTimeout(async () => {
 
-
+                    connection.onSignature(txId, async (_) => {
 
                         console.log(playerStateAccount.toString())
 
@@ -472,19 +472,54 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
                             const settleTxId = await connection.sendRawTransaction(signedRevealTransaction.serialize(), {
                                 skipPreflight: true,
-                                preflightCommitment: "finalized"
+                                preflightCommitment: "finalized",
                             });
 
                             console.log("Settle Transaction sent:", settleTxId);
 
                             // Confirm transaction
-                            await connection.confirmTransaction(txId, "finalized");
-                            console.log("Settle Transaction confirmed!  ✅");
+                            // const confirmResult = await connection.confirmTransaction(settleTxId, "finalized");
 
 
+                            connection.onSignature(settleTxId, async confirmResult => {
+                                console.log("Settle Transaction confirmed!  ✅");
+                                console.log("confirmResult", confirmResult);
 
 
+                                // setTimeout(async () => {
 
+
+                                const answer = await connection.getParsedTransaction(settleTxId, {
+                                    maxSupportedTransactionVersion: 0,
+                                });
+
+                                console.log("answer: ", answer)
+                                console.log("answer logs: ", answer?.meta?.logMessages)
+
+                                let resultLog = answer?.meta?.logMessages?.filter((line) =>
+                                    line.includes("FLIP_RESULT")
+                                )[0];
+
+                                console.log(resultLog?.split(": ")[2])
+
+                                let result = resultLog?.split(": ")[2] || -1;
+
+                                console.log("\nYou guessed: ", userGuess);
+
+                                console.log(`\The number rolled is: ... ${result}!`);
+
+
+                                if (userGuess === +result) {
+                                    console.log('You won!')
+                                }
+                                else {
+                                    console.log('Better luck next time.')
+                                }
+
+
+                                setRollResult(+result)
+
+                            })
 
 
                         } else {
@@ -526,7 +561,7 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
                         // }
 
 
-                    }, 1000);
+                    });
                 }
             } catch (error) {
                 console.error("Error checking account:", error);

@@ -12,6 +12,7 @@ function DieRoll() {
 
     const [guessInputValue, setGuessInputValue] = useState(0);
     const [error, setError] = useState("");
+    const [rollResult, setRollResult] = useState(-1);
 
     const anchorWallet = useAnchorWallet();
 
@@ -133,7 +134,7 @@ function DieRoll() {
 
             <br />
 
-            <WalletMultiButton />
+            {/* <WalletMultiButton /> */}
 
             <h1>Die Roller</h1>
 
@@ -144,7 +145,7 @@ function DieRoll() {
                 <br />
 
                 <p>
-                    Guess a number a roll the die to win crypto!
+                    Guess a number and roll the die to win crypto!
                 </p>
 
                 <br />
@@ -164,11 +165,15 @@ function DieRoll() {
                 <br />
                 {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
                 <br />
+                
+                <br />
+                {rollResult != -1 && <p style={{ color: "white", marginTop: "10px" }}>{"You rolled: " + rollResult}</p>}
+                <br />
 
                 <button
                     type="submit"
                     style={{
-                        marginTop: "20px",
+                        margin: "20px",
                         fontSize: "24px",
                         padding: "15px 30px",
                         borderRadius: "10px",
@@ -188,7 +193,9 @@ function DieRoll() {
                             setError("");
                             console.log("Roll button clicked! Guessing: ", guessInputValue);
 
-                            const result = await startRoll(+guessInputValue);
+                            const result = await startRoll(+guessInputValue, setRollResult);
+
+                            // setRollResult(result)
                         }
 
                     }}
@@ -205,10 +212,10 @@ function DieRoll() {
                 >
                     Roll
                 </button>
-                <button
+                {/* <button
                     type="submit"
                     style={{
-                        marginTop: "20px",
+                        margin: "20px",
                         fontSize: "24px",
                         padding: "15px 30px",
                         borderRadius: "10px",
@@ -237,7 +244,7 @@ function DieRoll() {
                     }}
                 >
                     Conenct wallet
-                </button>
+                </button> */}
 
             </div>
 
