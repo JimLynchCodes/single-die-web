@@ -10,6 +10,7 @@ module.exports = function override(config) {
       buffer: require.resolve("buffer/"),
       crypto: require.resolve("crypto-browserify"),
       https: require.resolve("https-browserify"),
+      http: require.resolve("stream-http"),
       stream: require.resolve("stream-browserify"),
       url: require.resolve("url/"),
       assert: require.resolve("assert/"),

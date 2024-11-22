@@ -9,3 +9,17 @@
     border: 2px solid #ccc;
     font-family: 'Arial' sans-serif;
 }
+
+.custom-wallet-button {
+  background-color: #3b82f6;  /* Custom background color */
+  color: white;               /* White text */
+  border-radius: 8px;         /* Rounded corners */
+  padding: 12px 20px;         /* Padding for the button */
+  font-size: 16px;            /* Font size */
+  border: none;               /* Remove default border */
+  cursor: pointer;           /* Pointer cursor on hover */
+}
+
+.custom-wallet-button:hover {
+  background-color: #2563eb; /* Hover effect */
+}

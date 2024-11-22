@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './DieRoll.css';
 import dieRollImg from '../die-roll.gif';
 import './crypto-stuff/utils';
 import startRoll from './crypto-stuff/start-roll';
+import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
+import { Commitment, Connection, PublicKey } from '@solana/web3.js';
+import { AnchorProvider, Program, setProvider, Wallet } from "@coral-xyz/anchor";
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 function DieRoll() {
 
     const [guessInputValue, setGuessInputValue] = useState(0);
     const [error, setError] = useState("");
+
+    const anchorWallet = useAnchorWallet();
 
     const handleChange = (e: any) => {
 
@@ -30,8 +36,90 @@ function DieRoll() {
         }
     };
 
+
+
+    const wallet = useWallet();
+    const [program, setProgram] = useState(null);
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+
+
+    // const network = 'https://api.devnet.solana.com';
+    // // const programID = new PublicKey(idl.address);
+    // const programID = new PublicKey(myProgramDevAddress);
+    // const opts = {
+    //   preflightCommitment: 'confirmed',
+    //   commitment: 'confirmed',
+    // };
+    // const connection = new Connection(network, (opts.commitment as Commitment));
+    useEffect(() => {
+        if (wallet.connected) {
+            initializeProgram();
+        }
+    }, [wallet.connected]);
+
+    const initializeProgram = async () => {
+        try {
+
+            // Constants
+            const programId = "3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7"
+
+            const network = 'https://api.devnet.solana.com';  // Devnet endpoint
+            const opts = {
+                preflightCommitment: 'confirmed',
+                commitment: 'confirmed',
+            };
+            // Create a connection to the devnet
+            const connection = new Connection(network, (opts.commitment as Commitment));
+            // Define the program ID from the IDL (replace with your actual program ID)
+            // const programID = new PublicKey("6Txeg9dhUq3aNhgoATKW1eeoxgdjvyxHxn2xhtELi7Ba");
+            // Set up the provider
+            // const provider = new AnchorProvider(
+            //     connection,
+            //     wallet as Wallet,  // Use local wallet for provider (use your wallet here if needed)
+            //     opts
+            // );
+            // setProvider(provider);
+            // const idl = require("./sb_randomness.json");
+            // Generate the program client from IDL.
+            // const program = new Program(idl);
+            // console.log("program", program)
+            // Execute the RPC.
+            // await program.rpc.initialize();
+            // setProgram(program);
+
+
+            const provider = new AnchorProvider(connection, (wallet as any), { preflightCommitment: 'processed' });
+
+            const pid = new PublicKey(programId); // Program ID as PublicKey
+            const idl = await Program.fetchIdl(pid, provider);
+
+            if (!idl) {
+                throw new Error(`Failed to fetch IDL for program: ${programId}`);
+            }
+
+            console.log('Fetched IDL:', idl);
+
+            // Create and return the program
+            const program = new Program(idl, provider);
+            console.log("p");
+            console.log(program)
+
+        } catch (error) {
+            console.error('Error initializing program:', error);
+            setError('Failed to initialize program');
+        }
+    };
+
+
     return (
         <div>
+
+            <br />
+
+            <WalletMultiButton />
+
             <h1>Die Roller</h1>
 
             <div>
