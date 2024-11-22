@@ -1,10 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
+import { AnchorProvider, Idl, Program, Wallet, } from "@coral-xyz/anchor";
 import {
     Connection,
     Keypair,
     PublicKey,
     SystemProgram,
     Commitment,
+    Transaction,
 } from "@solana/web3.js";
 import * as sb from "@switchboard-xyz/on-demand";
 
@@ -99,35 +101,101 @@ export async function handleTransaction(
 
 export async function initializeGame(
     myProgram: anchor.Program,
-    playerStateAccount: [anchor.web3.PublicKey, number],
+    playerStateAccount: PublicKey,
     escrowAccount: PublicKey,
-    keypair: Keypair,
+    // keypair: Keypair,
     sbProgram: anchor.Program,
-    connection: Connection
+    connection: Connection,
+    wallet: anchor.Wallet
 ): Promise<void> {
+
+    console.log('trying to build initialize tx')
+
     const initIx = await myProgram.methods
         .initialize()
         .accounts({
             playerState: playerStateAccount,
             escrowAccount: escrowAccount,
-            user: keypair.publicKey,
+            user: wallet.publicKey,
             systemProgram: SystemProgram.programId,
         })
         .instruction();
+
+    // Create a transaction
+    // const transaction = new Transaction().add(initIx);
+
+    // // Specify the fee payer (usually the wallet's public key)
+    // transaction.feePayer = wallet.publicKey;
+
+    // // Set a recent blockhash
+    // transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+    // // Sign the transaction
+    // const signedTx = await wallet.signTransaction(transaction);
+
+    // console.log('Signed Transaction:', signedTx);
 
     const txOpts = {
         commitment: "processed" as Commitment,
         skipPreflight: true,
         maxRetries: 0,
     };
-    await handleTransaction(
-        sbProgram,
-        connection,
-        [initIx],
-        keypair,
-        [keypair],
-        txOpts
-    );
+
+    // const signedTx = await wallet.signTransaction(initIx);
+    // console.log('signed', signedTx);
+
+    try {
+        const transaction = new Transaction().add(initIx);
+        // const signed = await wallet.signTransaction(transaction);
+
+        // const sim4 = await connection.simulateTransaction(signed);
+
+
+        transaction.feePayer = wallet.publicKey;
+        transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+        const signedTransaction = await wallet.signTransaction(transaction);
+
+        const txId = await connection.sendRawTransaction(signedTransaction.serialize(), {
+            skipPreflight: true,
+            preflightCommitment: "finalized"
+        });
+        
+        console.log("Transaction sent:", txId);
+        
+        // Confirm transaction
+        await connection.confirmTransaction(txId, "finalized");
+        console.log("Transaction confirmed!");
+        
+
+        // const sig4 = await wallet.(transaction, connection);
+        // const sig4 = await connection.sendTransaction(transaction, connection);
+        // await connection.confirmTransaction(sig4, COMMITMENT);
+        // Simulate the signed transaction to check if it's valid
+        // const sim = await connection.simulateTransaction(signedTx, txOpts);
+        // console.log("Simulation result: ", sim);
+
+        // // Send the signed transaction
+        // const sig1 = await connection.sendTransaction(signedTx, txOpts);
+        // console.log("Initialize result: ", sig1);
+
+        // const txId = await connection.sendRawTransaction(signedTx.serialize(), txOpts);
+        // console.log('Transaction ID:', txId);
+
+        // return txId;
+    }
+    catch (err) {
+        console.error(err)
+    }
+
+    // await handleTransaction(
+    //     sbProgram,
+    //     connection,
+    //     [initIx],
+    //     keypair,
+    //     [keypair],
+    //     txOpts
+    // );
 }
 
 export /**
@@ -144,15 +212,16 @@ export /**
         myProgram: anchor.Program,
         rngKpPublicKey: PublicKey,
         userGuess: number,
-        playerStateAccount: [anchor.web3.PublicKey, number],
-        keypair: Keypair,
-        escrowAccount: PublicKey
+        playerStateAccount: PublicKey,
+        // keypair: Keypair,
+        escrowAccount: PublicKey,
+        wallet: anchor.Wallet,
     ): Promise<anchor.web3.TransactionInstruction> {
     return await myProgram.methods
         .coinFlip(rngKpPublicKey, userGuess)
         .accounts({
             playerState: playerStateAccount,
-            user: keypair.publicKey,
+            user: wallet.publicKey,
             randomnessAccountData: rngKpPublicKey,
             escrowAccount: escrowAccount,
             systemProgram: SystemProgram.programId,
@@ -173,10 +242,10 @@ export /**
 export async function settleFlipInstruction(
     myProgram: anchor.Program,
     escrowBump: number,
-    playerStateAccount: [anchor.web3.PublicKey, number],
+    playerStateAccount: PublicKey,
     rngKpPublicKey: PublicKey,
     escrowAccount: PublicKey,
-    keypair: Keypair
+    wallet: anchor.Wallet,
 ): Promise<anchor.web3.TransactionInstruction> {
     return await myProgram.methods
         .settleFlip(escrowBump)
@@ -184,7 +253,7 @@ export async function settleFlipInstruction(
             playerState: playerStateAccount,
             randomnessAccountData: rngKpPublicKey,
             escrowAccount: escrowAccount,
-            user: keypair.publicKey,
+            user: wallet.publicKey,
             systemProgram: SystemProgram.programId,
         })
         .instruction();

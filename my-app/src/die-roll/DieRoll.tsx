@@ -112,6 +112,21 @@ function DieRoll() {
         }
     };
 
+    const connectWallet = async () => {
+        try {
+            const { solana } = window;
+
+            if (solana && solana.isPhantom) {
+                const response = await solana.connect();
+                console.log("Connected with public key:", response.publicKey.toString());
+            } else {
+                console.error("Phantom Wallet not available");
+            }
+        } catch (error) {
+            console.error("Error connecting to wallet:", error);
+        }
+    };
+
 
     return (
         <div>
@@ -189,6 +204,39 @@ function DieRoll() {
                     }}
                 >
                     Roll
+                </button>
+                <button
+                    type="submit"
+                    style={{
+                        marginTop: "20px",
+                        fontSize: "24px",
+                        padding: "15px 30px",
+                        borderRadius: "10px",
+                        background: "linear-gradient(145deg, #ff9800, #ffc107)",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        border: "none",
+                        boxShadow: "0 6px #d17b00",
+                        cursor: "pointer",
+                        transition: "transform 0.2s, box-shadow 0.2s",
+                    }}
+                    onClick={async (_e: any) => {
+
+                       connectWallet()
+
+                    }}
+                    onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                        button.style.transform = "translateY(4px)";
+                        button.style.boxShadow = "0 2px #d17b00";
+                    }}
+                    onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                        button.style.transform = "translateY(0)";
+                        button.style.boxShadow = "0 6px #d17b00";
+                    }}
+                >
+                    Conenct wallet
                 </button>
 
             </div>

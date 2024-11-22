@@ -6,6 +6,7 @@ import {
     SystemProgram,
     Commitment,
     clusterApiUrl,
+    Transaction,
 } from "@solana/web3.js";
 import * as sb from "@switchboard-xyz/on-demand";
 import { initializeGame, loadSbProgram } from "./utils";
@@ -58,7 +59,7 @@ async function startRoll(userGuess: number): Promise<number> {
         const provider = new AnchorProvider(connection, wallet, {
             preflightCommitment: "processed",
         });
-        
+
         if (!provider || !provider.connection) {
             console.log("Wallet is not connected");
             // You may need to prompt the user to connect their wallet
@@ -245,89 +246,296 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
     const userPublicKey = wallet.publicKey;
     console.log("wallet.publicKey ", userPublicKey)
 
-
-
-
-    // // Create randomness
-    // const [randomness, ix] = await sb.Randomness.create(
-    //     program,
-    //     rngKp,
-    //     queue,
-    //     wallet.publicKey, // Use the user's public key as the authority
-    //     /* ... other arguments as needed */
-    // );
-
-    // const txOpts = {
-    //     commitment: "processed" as Commitment,
-    //     skipPreflight: false,
-    //     maxRetries: 0,
-    //   };
-
-    // create randomness account and initialise it
-    //   const rngKp = Keypair.generate();
     const [randomness, ix] = await sb.Randomness.create(sbProgram, rngKp, queue);
     console.log("\nCreated randomness account..");
     console.log(randomness);
     console.log(ix);
-    //   console.log("Randomness account", randomness.pubkey.toString());
-    
-    
+
     console.log(sbProgram.provider.connection);
     console.log(wallet.publicKey);
     console.log(keypair);
     console.log(rngKp);
 
-
-    // async function getPayerKeypair(provider: any): Promise<Keypair> {
-    //     if (provider.publicKey) {
-    //         const secretKey = await provider.request({
-    //             method: "solana_requestAccounts",
-    //         });
-    //         return Keypair.fromSecretKey(new Uint8Array(secretKey[0].secretKey));  // Assuming your wallet provides this data
-    //     } else {
-    //         throw new Error("No public key available.");
-    //     }
-    // }
-
-    // const payerKeypair = await getPayerKeypair(); 
-
-    console.log(wallet.payer)
+    console.log("payer: ", wallet.payer)
     console.log(wallet.publicKey)
     console.log(rngKp)
 
-    // const createRandomnessTx = await sb.asV0Tx({
-    //     connection: sbProgram.provider.connection,
-    //     ixs: [ix],
-    //     payer: wallet.publicKey,
-    //     signers: [rngKp],
-    //     computeUnitPrice: 75_000,
-    //     computeUnitLimitMultiple: 1.3,
-    // });
     const createRandomnessTx = await sb.asV0Tx({
         connection: sbProgram.provider.connection,
         ixs: [ix],
         payer: wallet.publicKey,
         signers: [rngKp],
-        // computeUnitPrice: 75_000,
-        // computeUnitLimitMultiple: 1.3,
+        computeUnitPrice: 75_000,
+        computeUnitLimitMultiple: 1.3,
     });
 
     console.log("createRandomnessTx: ", createRandomnessTx);
 
     if (wallet.signTransaction) {
         console.log('signing transaction');
-        const signedTx = await wallet.signTransaction(createRandomnessTx);
-        console.log('signed', signedTx);
-    
+        // const signedTx = await wallet.signTransaction(createRandomnessTx);
+
         try {
             // Simulate the signed transaction to check if it's valid
-            const sim = await connection.simulateTransaction(signedTx, txOpts);
-            console.log("Simulation result: ", sim);
-    
-            // Send the signed transaction
-            const sig1 = await connection.sendTransaction(signedTx, txOpts);
-            await connection.confirmTransaction(sig1, COMMITMENT);
-            console.log("Transaction Signature: ", sig1);
+            // const sim = await connection.simulateTransaction(signedTx, txOpts);
+            // console.log("Simulation result: ", sim);
+
+            // // Send the signed transaction
+            // const sig1 = await connection.sendTransaction(signedTx, txOpts);
+            // await connection.confirmTransaction(sig1, COMMITMENT);
+            // console.log("Transaction Signature: ", sig1);
+
+            const signedRandomnessTransaction = await wallet.signTransaction(createRandomnessTx);
+            console.log('signedRandomnessTransaction', signedRandomnessTransaction);
+
+            const txId = await connection.sendRawTransaction(signedRandomnessTransaction.serialize(), {
+                skipPreflight: true,
+                preflightCommitment: "finalized"
+            });
+
+            console.log("signedRandomnessTransaction sent:", txId);
+
+            // Confirm transaction
+            await connection.confirmTransaction(txId, "finalized");
+            console.log("signedRandomnessTransaction confirmed! ", txId);
+
+
+            console.log("down here sb: ", sbProgram)
+
+            // initilise example program accounts
+            const [playerStateAccount, playerStateAccountbump] = await PublicKey.findProgramAddressSync(
+                [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
+                program.programId
+            );
+            console.log("playerStateAccount: ", playerStateAccount.toString())
+
+            const [playerStateAccountSb, playerStateAccountSbbump] = await PublicKey.findProgramAddressSync(
+                [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
+                program.programId
+                // sbProgram.programId
+            );
+            console.log("playerStateAccountSb: ", playerStateAccountSb.toString())
+
+            // Find the escrow account PDA and initliaze the game
+            const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
+                [Buffer.from(ESCROW_SEED)],
+                program.programId
+            );
+
+            console.log("\nInitialize the game states...");
+            console.log(playerStateAccount);
+            console.log(escrowAccount);
+            console.log(escrowBump);
+
+            try {
+                const accountInfo1 = await connection.getAccountInfo(playerStateAccount);
+
+                if (!accountInfo1) {
+                    console.log("Account does not exist.");
+                    // return false;
+                } else {
+
+                    // You can check if the account has been initialized based on your program's requirements
+                    // For example, you might check the data length or content
+                    console.log("Account found. Data length:", accountInfo1.data.length);
+
+                    // Perform a specific check for initialization
+                    if (accountInfo1.data.length > 0) {
+                        console.log("Account is initialized.");
+                        // return true;
+                    } else {
+                        console.log("Account exists but is uninitialized.");
+                        // return false;
+
+                        await initializeGame(
+                            program,
+                            playerStateAccount,
+                            escrowAccount,
+                            sbProgram,
+                            connection,
+                            wallet
+                        );
+                    }
+
+
+                    // Commit to randomness Ix
+                    console.log("\nSubmitting Guess...");
+                    const commitIx = await randomness.commitIx(queue);
+
+                    // // Create coinFlip Ix
+                    console.log("rngKp: ", rngKp)
+                    console.log("program: ", program)
+                    console.log("usergues: ", userGuess)
+                    console.log("playerStateAccount: ", playerStateAccount)
+                    // console.log("wallet.payer: ", wallet.payer)
+                    console.log("escrowAccount: ", escrowAccount)
+
+                    const coinFlipIx = await createCoinFlipInstruction(
+                        program,
+                        rngKp.publicKey,
+                        userGuess,
+                        playerStateAccount,
+                        // wallet.payer,
+                        escrowAccount,
+                        wallet
+                    );
+
+                    console.log("coin flip ix: ", coinFlipIx)
+
+
+                    // const transaction = new Transaction().add(coinFlipIx);
+
+                    const commitTx = await sb.asV0Tx({
+                        connection: sbProgram.provider.connection,
+                        ixs: [commitIx, coinFlipIx],
+                        payer: wallet.publicKey,
+                        // signers: [keypair],
+                        computeUnitPrice: 75_000,
+                        computeUnitLimitMultiple: 1.3,
+                      });
+
+                    console.log('trying raw send')
+
+                    // transaction.feePayer = wallet.publicKey;
+                    // transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+                    const signedCommitTransaction = await wallet.signTransaction(commitTx);
+
+                    const txId = await connection.sendRawTransaction(signedCommitTransaction.serialize(), {
+                        skipPreflight: true,
+                        preflightCommitment: "finalized"
+                    });
+
+                    console.log("Coin Flip Transaction sent:", txId);
+
+                    // Confirm transaction
+                    await connection.confirmTransaction(txId, "finalized");
+                    // console.log("Coin Flip Transaction confirmed!");
+                    console.log("Guess Transaction Confirmed!  ✅");
+
+
+                    setTimeout(async () => {
+
+
+
+                        console.log(playerStateAccount.toString())
+
+                        const accountInfo = await connection.getAccountInfo(playerStateAccount);
+                        if (accountInfo) {
+                            const accountData = accountInfo.data;
+                            console.log("Account Data:", accountData);
+                            console.log("Account Owner:", accountInfo?.owner.toBase58());
+                            // Inspect whether the discriminator matches the expected value
+
+                            console.log("\nReveal the randomness...", randomness);
+                            const revealIx = await randomness.revealIx();
+                            console.log("\nRandomness revealed! ", revealIx);
+
+
+                            const settleFlipIx = await settleFlipInstruction(
+                                program,
+                                escrowBump,
+                                playerStateAccount,
+                                rngKp.publicKey,
+                                escrowAccount,
+                                wallet
+                            );
+                            console.log("settleFlipIx: ", settleFlipIx)
+
+                            const revealTx = await sb.asV0Tx({
+                                connection: sbProgram.provider.connection,
+                                ixs: [revealIx, settleFlipIx],
+                                payer: wallet.publicKey,
+                                // signers: [wa],
+                                computeUnitPrice: 75_000,
+                                computeUnitLimitMultiple: 1.3,
+                            });
+
+
+                            // const sim5 = await connection.simulateTransaction(revealTx, txOpts);
+                            // const sig5 = await connection.sendTransaction(revealTx, txOpts);
+                            // await connection.confirmTransaction(sig5, COMMITMENT);
+
+
+
+
+
+
+                            // const settleTransaction = new Transaction().add(settleFlipIx);
+
+                            console.log('trying raw send')
+
+                            // settleTransaction.feePayer = wallet.publicKey;
+                            // settleTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+                            const signedRevealTransaction = await wallet.signTransaction(revealTx);
+
+                            const settleTxId = await connection.sendRawTransaction(signedRevealTransaction.serialize(), {
+                                skipPreflight: true,
+                                preflightCommitment: "finalized"
+                            });
+
+                            console.log("Settle Transaction sent:", settleTxId);
+
+                            // Confirm transaction
+                            await connection.confirmTransaction(txId, "finalized");
+                            console.log("Settle Transaction confirmed!  ✅");
+
+
+
+
+
+
+
+                        } else {
+                            console.error("Account not found or invalid");
+                        }
+
+
+
+
+
+
+                        // console.log("  Transaction Signature revealTx", sig5);
+                        // console.log("Reveal Transaction Confirmed!  ✅");
+
+                        // const answer = await connection.getParsedTransaction(sig5, {
+                        //     maxSupportedTransactionVersion: 0,
+                        // });
+                        // let resultLog = answer?.meta?.logMessages?.filter((line) =>
+                        //     line.includes("FLIP_RESULT")
+                        // )[0];
+                        // let result = resultLog?.split(": ")[2];
+
+                        // console.log("\nYou guessed: ", userGuess);
+
+                        // if (result) {
+
+
+                        //     console.log(`\The number rolled is: ... ${result}!`);
+
+
+                        //     if (userGuess === +result) {
+                        //         console.log('You won!')
+                        //     }
+                        //     else {
+                        //         console.log('Better luck next time.')
+                        //     }
+
+                        //     return +result;
+                        // }
+
+
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error("Error checking account:", error);
+                // return false;
+            }
+
+
+
+
         } catch (err) {
             console.error("Transaction failed", err);
         }
@@ -354,7 +562,7 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
     //     catch(err) {
     //         console.log(JSON.stringify(err, null, 2))
     //     }
-           
+
     // }
 
     // const [randomness, ix] = await sb.Randomness.create(sbProgram, rngKp, queue, wallet.publicKey);
@@ -380,118 +588,8 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
     //     sig1
     // );
 
-    // // initilise example program accounts
-    // const playerStateAccount = await PublicKey.findProgramAddressSync(
-    //     [Buffer.from(PLAYER_STATE_SEED), keypair.publicKey.toBuffer()],
-    //     sbProgram.programId
-    // );
-    // // Find the escrow account PDA and initliaze the game
-    // const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
-    //     [Buffer.from(ESCROW_SEED)],
-    //     program.programId
-    // );
-    // console.log("\nInitialize the game states...");
-    // await initializeGame(
-    //   myProgram,
-    //   playerStateAccount,
-    //   escrowAccount,
-    //   keypair,
-    //   sbProgram,
-    //   connection
-    // );
-    // await ensureEscrowFunded(
-    //   connection,
-    //   escrowAccount,
-    //   keypair,
-    //   sbProgram,
-    //   txOpts
-    // );
-
-    // // Commit to randomness Ix
-    // console.log("\nSubmitting Guess...");
-    // const commitIx = await randomness.commitIx(queue);
-
-    // // Create coinFlip Ix
-    // const coinFlipIx = await createCoinFlipInstruction(
-    //     myProgram,
-    //     rngKp.publicKey,
-    //     userGuess,
-    //     playerStateAccount,
-    //     keypair,
-    //     escrowAccount
-    // );
-
-    // const commitTx = await sb.asV0Tx({
-    //     connection: sbProgram.provider.connection,
-    //     ixs: [commitIx, coinFlipIx],
-    //     payer: keypair.publicKey,
-    //     signers: [keypair],
-    //     computeUnitPrice: 75_000,
-    //     computeUnitLimitMultiple: 1.3,
-    // });
-
-    // const sim4 = await connection.simulateTransaction(commitTx, txOpts);
-    // const sig4 = await connection.sendTransaction(commitTx, txOpts);
-    // await connection.confirmTransaction(sig4, COMMITMENT);
-    // // console.log("  Transaction Signature commitTx", sig4);
-    // console.log("Guess Transaction Confirmed!  ✅");
-
-    // // setTimeout(async () => {
-
-    // console.log("\nReveal the randomness...");
-    // const revealIx = await randomness.revealIx();
-
-    // const settleFlipIx = await settleFlipInstruction(
-    //     myProgram,
-    //     escrowBump,
-    //     playerStateAccount,
-    //     rngKp.publicKey,
-    //     escrowAccount,
-    //     keypair
-    // );
-    // // console.log("settleFlipIx: ", settleFlipIx)
-
-    // const revealTx = await sb.asV0Tx({
-    //     connection: sbProgram.provider.connection,
-    //     ixs: [revealIx, settleFlipIx],
-    //     payer: keypair.publicKey,
-    //     signers: [keypair],
-    //     computeUnitPrice: 75_000,
-    //     computeUnitLimitMultiple: 1.3,
-    // });
 
 
-    // const sim5 = await connection.simulateTransaction(revealTx, txOpts);
-    // const sig5 = await connection.sendTransaction(revealTx, txOpts);
-    // await connection.confirmTransaction(sig5, COMMITMENT);
-    // // console.log("  Transaction Signature revealTx", sig5);
-    // console.log("Reveal Transaction Confirmed!  ✅");
-
-    // const answer = await connection.getParsedTransaction(sig5, {
-    //     maxSupportedTransactionVersion: 0,
-    // });
-    // let resultLog = answer?.meta?.logMessages?.filter((line) =>
-    //     line.includes("FLIP_RESULT")
-    // )[0];
-    // let result = resultLog?.split(": ")[2];
-
-    // console.log("\nYou guessed: ", userGuess);
-
-    // if (result) {
-
-
-    //     console.log(`\The number rolled is: ... ${result}!`);
-
-
-    //     if (userGuess === +result) {
-    //         console.log('You won!')
-    //     }
-    //     else {
-    //         console.log('Better luck next time.')
-    //     }
-
-    //     return +result;
-    // }
 
     // console.log("Couldn't parse result...");
 
