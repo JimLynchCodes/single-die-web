@@ -8,6 +8,7 @@ module.exports = function override(config) {
       "process/browser": require.resolve("process/browser"),
       zlib: require.resolve("browserify-zlib"),
       buffer: require.resolve("buffer/"),
+      buffer: require.resolve("buffer"),
       crypto: require.resolve("crypto-browserify"),
       https: require.resolve("https-browserify"),
       http: require.resolve("stream-http"),
@@ -17,7 +18,7 @@ module.exports = function override(config) {
       path: require.resolve("path-browserify"),
       os: require.resolve("os-browserify"),
       fs: require.resolve("browserify-fs"),
-      vm: require.resolve("vm-browserify"),
+
     }
   };
 
