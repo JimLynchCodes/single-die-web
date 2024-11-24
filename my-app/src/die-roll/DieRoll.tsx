@@ -4,10 +4,22 @@ import dieRollImg from '../die-roll.gif';
 import './crypto-stuff/utils';
 import startRoll from './crypto-stuff/start-roll';
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
-import { Commitment, Connection, PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Commitment, Connection, PublicKey } from '@solana/web3.js';
 import { AnchorProvider, Program, setProvider, Wallet } from "@coral-xyz/anchor";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { connected } from 'process';
+import { publicDecrypt } from 'crypto';
+
+
+type LogHistoryData = {
+    playerAddress: String,
+    wager: number,
+    guess: number,
+    numberRolled: number,
+    wonOrLost: String,
+    blocktime: number,
+    blocktimeAgo: String
+}
 
 function DieRoll() {
 
@@ -47,6 +59,9 @@ function DieRoll() {
     const [program, setProgram] = useState(null);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [connection, setConnection] = useState(undefined);
+    const [initStuffRan, setInitStuffRan] = useState(false);
+    const [logHistoryData, setLogHistoryData] = useState([]);
 
 
 
@@ -61,10 +76,25 @@ function DieRoll() {
     useEffect(() => {
         // if (wallet.connected) {
         // initializeProgram();
+
+        runInitStuff();
+
         // setConnectedAddress(wallet.publicKey?.toString() ?? "")
         console.log('connected here: ', wallet)
         // }
+
+
+
     }, []);
+
+    const runInitStuff = async () => {
+
+        if (!initStuffRan) {
+            await initializeProgram();
+            setInitStuffRan(true);
+        }
+
+    }
 
     const initializeProgram = async () => {
         try {
@@ -80,7 +110,20 @@ function DieRoll() {
                 commitment: 'confirmed',
             };
             // Create a connection to the devnet
-            const connection = new Connection(network, (opts.commitment as Commitment));
+            // const connection = new Connection(network, (opts.commitment as Commitment));
+            const connection = new Connection(clusterApiUrl("devnet"), {
+                commitment: "confirmed",
+
+            });
+
+
+
+
+
+
+
+            // setConnection(connection)
+
             // Define the program ID from the IDL (replace with your actual program ID)
             // const programID = new PublicKey("6Txeg9dhUq3aNhgoATKW1eeoxgdjvyxHxn2xhtELi7Ba");
             // Set up the provider
@@ -130,11 +173,142 @@ function DieRoll() {
             console.log("p");
             console.log(program)
 
+
+            const getHistoryLogs = async (connection: Connection, programId: PublicKey): Promise<any> => {
+
+                console.log("fetching logs...", programId.toString())
+
+                // Get logs not more than 2 days old
+                const now = Date.now();
+                const twoDaysAgo = now - 2 * 24 * 60 * 60 * 1000;
+
+                // Fetch all signatures for the program in the last 24 hours
+                const signatures = await connection.getSignaturesForAddress(programId, {
+                    limit: 10, // Adjust as needed
+                    // until: new Date(twoDaysAgo).toISOString(),
+                });
+
+                console.log(`Found ${signatures.length} transactions in the past 24 hours.`);
+
+                console.table(signatures)
+
+                const logs: any[] = [];
+
+                // const alreadyChecked: any = {};
+
+                const alreadyChecked: Map<String, Boolean> = new Map();
+
+                for (const [index, sigInfo] of signatures.entries()) {
+
+                    // console.log('signature is: ', sigInfo)
+
+                    setTimeout(async () => {
+
+                        // console.log("before: " + alreadyChecked.get(sigInfo.signature))
+
+                        if (alreadyChecked.get(sigInfo.signature) === undefined) {
+                            alreadyChecked.set(sigInfo.signature, true)
+
+                            // console.log("set sig: " + sigInfo.signature)
+                            // console.log("after " + alreadyChecked.get(sigInfo.signature))
+
+                            const tx = await connection.getTransaction(sigInfo.signature, {
+                                commitment: "confirmed",
+                                "maxSupportedTransactionVersion": 0
+                            });
+
+                            // console.log('tx: ', tx)
+
+                            if (tx && tx.meta && tx.meta.logMessages) {
+                                const flipLogs = tx.meta.logMessages.filter((log) =>
+                                    log.includes("ROLL_RESULT")
+                                );
+
+                                if (flipLogs.length > 0) {
+
+                                    // Extract the relevant parts using a regular expression
+                                    const match = flipLogs[0].match(
+                                        /ROLL_RESULT: (\d+) for player: ([\w.]+) who guessed: (\d+) with wager: (\d+)/
+                                    );
+
+                                    if (!match) {
+                                        throw new Error(`Log format invalid: ${flipLogs[0]}`);
+                                    }
+
+                                    // Destructure the matched groups
+                                    const [, numberRolled, playerAddress, guess, wager] = match;
+
+                                    // Determine if the player won or lost
+                                    const wonOrLost = numberRolled === guess ? "won" : "lost";
+
+                                    // Return the parsed data as an object
+
+
+                                    const logData = {
+                                        playerAddress,
+                                        wager: parseInt(wager, 10),
+                                        guess: parseInt(guess, 10),
+                                        numberRolled: parseInt(numberRolled, 10),
+                                        wonOrLost,
+                                        blocktime: tx.blockTime,
+                                        blocktimeAgo: calculateTimeAgo(tx.blockTime)
+                                    };
+
+                                    logs.push(logData);
+
+                                    setLogHistoryData(logs as any)
+
+                                    console.log(logs)
+                                }
+                            }
+                        }
+                    }, 650 * index)
+
+                }
+
+
+                return 4;
+            }
+
+            getHistoryLogs(connection, pid);
+
         } catch (error) {
             console.error('Error initializing program:', error);
             setError('Failed to initialize program');
         }
     };
+
+    function calculateTimeAgo(blockTime?: number | null): string {
+
+        if (!blockTime)
+            return ""
+
+        // Get the current time in milliseconds
+        const now = Date.now();
+
+        // Ensure blockTime is in milliseconds (convert from seconds if needed)
+        if (blockTime < 1e12) {
+            blockTime *= 1000; // Convert seconds to milliseconds
+        }
+
+        // Calculate the difference in milliseconds
+        const timeDifference = now - blockTime;
+
+        // Convert to minutes and hours
+        const minutesAgo = Math.floor(timeDifference / (1000 * 60));
+        const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
+
+        // Return a human-readable string
+        if (minutesAgo < 60) {
+
+            if (minutesAgo === 0)
+                return "just now"
+
+            return `${minutesAgo} minute${minutesAgo === 1 ? "" : "s"} ago`;
+        } else {
+            return `${hoursAgo} hour${hoursAgo === 1 ? "" : "s"} ago`;
+        }
+    }
 
     const connectWallet = async () => {
         try {
@@ -316,8 +490,16 @@ function DieRoll() {
 
             </div>
 
+
+                    <pre>
+
+                        {JSON.stringify(logHistoryData, null, 2)}
+                    </pre>
+
         </div>
     );
 }
 
 export default DieRoll;
+
+
