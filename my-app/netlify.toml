@@ -1,0 +1,10 @@
+[build]
+  # Directory for the build output
+  publish = "build" 
+  # Command to build the project
+  command = "npm run build"
+
+[build.environment]
+  # Environment variables for the build process
+  CI = "false" # Disables treating warnings as errors
+
