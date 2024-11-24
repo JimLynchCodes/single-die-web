@@ -158,13 +158,13 @@ export async function initializeGame(
 
         const txId = await connection.sendRawTransaction(signedTransaction.serialize(), {
             skipPreflight: true,
-            preflightCommitment: "finalized"
+            preflightCommitment: "confirmed"
         });
         
         console.log("Transaction sent:", txId);
         
         // Confirm transaction
-        await connection.confirmTransaction(txId, "finalized");
+        await connection.confirmTransaction(txId, "confirmed");
         console.log("Transaction confirmed!");
         
 

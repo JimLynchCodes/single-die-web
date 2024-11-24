@@ -5,20 +5,29 @@ import DieRoll from './die-roll/DieRoll';
 import { WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
+import CustomAlert from './geo-blocker-alert/GeoBlockeralert';
 
 function App() {
 
   const wallets = [new PhantomWalletAdapter()];
 
+  const handleClose = () => {
+    console.log("Alert closed!");
+  };
+
   return (
     <div className="App">
 
       <header className="App-header">
-      <WalletProvider wallets={wallets} autoConnect>
-      <WalletModalProvider>
-        <DieRoll />
-      </WalletModalProvider>
-      </WalletProvider>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+
+            <CustomAlert message="By closing this popup you agree to abide by your local gambling laws." onClose={handleClose} />
+
+            <DieRoll />
+
+          </WalletModalProvider>
+        </WalletProvider>
       </header>
 
       {/*  <img src={logo} className="App-logo" alt="logo" />

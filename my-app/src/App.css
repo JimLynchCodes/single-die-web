@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Roboto';
+  src: url('./Roboto-Regular.ttf') format('ttf');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
 .App {
   text-align: center;
 }
@@ -35,4 +43,26 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* General style for all <a> tags */
+a {
+  color: #87cefa; /* Light blue (SkyBlue) */
+  text-decoration: none; /* Remove underline by default */
+}
+
+/* Hover state */
+a:hover {
+  color: #add8e6; /* Lighter blue (LightBlue) */
+  text-decoration: underline; /* Add underline on hover for emphasis */
+}
+
+/* Visited state */
+a:visited {
+  color: #b0e0e6; /* Pale blue for visited links */
+}
+
+/* Active state */
+a:active {
+  color: #5f9ea0; /* Slightly darker blue for active links */
 }

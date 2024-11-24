@@ -7,12 +7,16 @@ import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
 import { Commitment, Connection, PublicKey } from '@solana/web3.js';
 import { AnchorProvider, Program, setProvider, Wallet } from "@coral-xyz/anchor";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { connected } from 'process';
 
 function DieRoll() {
 
     const [guessInputValue, setGuessInputValue] = useState(0);
     const [error, setError] = useState("");
-    const [rollResult, setRollResult] = useState(-1);
+    const [rollResult, setRollResult] = useState("");
+    const [rollResultComment, setRollResultComment] = useState("");
+    const [connectedAddress, setConnectedAddress] = useState("");
+    const [currentNetwork, setCurrentNetwork] = useState("");
 
     const anchorWallet = useAnchorWallet();
 
@@ -55,13 +59,17 @@ function DieRoll() {
     // };
     // const connection = new Connection(network, (opts.commitment as Commitment));
     useEffect(() => {
-        if (wallet.connected) {
-            initializeProgram();
-        }
-    }, [wallet.connected]);
+        // if (wallet.connected) {
+        // initializeProgram();
+        // setConnectedAddress(wallet.publicKey?.toString() ?? "")
+        console.log('connected here: ', wallet)
+        // }
+    }, []);
 
     const initializeProgram = async () => {
         try {
+
+            console.log('initializing program');
 
             // Constants
             const programId = "3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7"
@@ -90,8 +98,23 @@ function DieRoll() {
             // await program.rpc.initialize();
             // setProgram(program);
 
+            // const version = await response.getVersion();
+            console.log('Connected to:', connection.rpcEndpoint);
+
+            if (network.includes('devnet')) {
+                setCurrentNetwork('devnet')
+                console.log('devnet');
+            } else if (network.includes('testnet')) {
+                setCurrentNetwork('testnet')
+                console.log('testnet');
+            } else {
+                setCurrentNetwork('mainnet')
+                console.log('mainnet');
+            }
 
             const provider = new AnchorProvider(connection, (wallet as any), { preflightCommitment: 'processed' });
+
+            console.log(provider)
 
             const pid = new PublicKey(programId); // Program ID as PublicKey
             const idl = await Program.fetchIdl(pid, provider);
@@ -117,9 +140,25 @@ function DieRoll() {
         try {
             const { solana } = window;
 
-            if (solana && solana.isPhantom) {
+            if (solana) {
+
+
+                console.log("real net")
+                console.log(window.solana.rpcEndpoint)
+
+
                 const response = await solana.connect();
                 console.log("Connected with public key:", response.publicKey.toString());
+                console.log("real net")
+                console.log(window.solana.rpcEndpoint)
+                console.log(window.solana)
+                console.log(window.solana.connection)
+                console.log(response)
+                console.log(window)
+
+
+                setConnectedAddress(response.publicKey.toString())
+
             } else {
                 console.error("Phantom Wallet not available");
             }
@@ -135,6 +174,29 @@ function DieRoll() {
             <br />
 
             {/* <WalletMultiButton /> */}
+
+            {connectedAddress && <div>
+                <i>
+
+                    {"Connected wallet: "}
+                    <a href={"https://solscan.io/account/" + connectedAddress}>{connectedAddress.slice(0, 5) + '...' + connectedAddress.slice(connectedAddress.length - 6, connectedAddress.length - 1)}</a>
+                </i>
+            </div>
+            }
+            {
+                connectedAddress && <div>
+                    <br />
+
+                    <i>
+                        Note: devnet is currently the only supported network!
+                        <br />
+                        Please switch your wallet to devnet.
+                    </i>
+                    <br />
+                    <br />
+                    <br />
+                </div>
+            }
 
             <h1>Die Roller</h1>
 
@@ -165,12 +227,15 @@ function DieRoll() {
                 <br />
                 {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
                 <br />
-                
+
                 <br />
-                {rollResult != -1 && <p style={{ color: "white", marginTop: "10px" }}>{"You rolled: " + rollResult}</p>}
+                {rollResult != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>}
+                <br />
+                {rollResultComment != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResultComment}</p>}
+                <br />
                 <br />
 
-                <button
+                {connectedAddress && <button
                     type="submit"
                     style={{
                         margin: "20px",
@@ -191,9 +256,12 @@ function DieRoll() {
                             setError("Please enter a number between 1 and 6.");
                         } else {
                             setError("");
+                            setRollResultComment("");
                             console.log("Roll button clicked! Guessing: ", guessInputValue);
 
-                            const result = await startRoll(+guessInputValue, setRollResult);
+                            await initializeProgram();
+
+                            const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment);
 
                             // setRollResult(result)
                         }
@@ -211,8 +279,8 @@ function DieRoll() {
                     }}
                 >
                     Roll
-                </button>
-                {/* <button
+                </button>}
+                {!connectedAddress && <button
                     type="submit"
                     style={{
                         margin: "20px",
@@ -229,7 +297,7 @@ function DieRoll() {
                     }}
                     onClick={async (_e: any) => {
 
-                       connectWallet()
+                        connectWallet()
 
                     }}
                     onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -243,8 +311,8 @@ function DieRoll() {
                         button.style.boxShadow = "0 6px #d17b00";
                     }}
                 >
-                    Conenct wallet
-                </button> */}
+                    Connect wallet
+                </button>}
 
             </div>
 

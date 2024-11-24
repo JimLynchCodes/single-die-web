@@ -23,10 +23,13 @@ import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
 const PLAYER_STATE_SEED = "playerState";
 const ESCROW_SEED = "stateEscrow";
 // const COMMITMENT = "confirmed";
-const COMMITMENT = "finalized" as Commitment;
+// const COMMITMENT = "finalized" as Commitment;
+const COMMITMENT = "confirmed" as Commitment;
 
 
-async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<number>>): Promise<number> {
+async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<string>>,
+    setResultComment: React.Dispatch<React.SetStateAction<string>>
+): Promise<number> {
 
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
     // console.log({ keypair, connection, program })
@@ -162,7 +165,7 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
                 console.log(program);
 
 
-                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult)
+                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult, setResultComment)
             }
             // try {
             //     const greetingAccount = Keypair.generate();
@@ -200,11 +203,14 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
 }
 
 /// takes a guess, calls to blockchain, returns the result.
-async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<number>>): Promise<number> {
+async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number,
+    setRollResult: React.Dispatch<React.SetStateAction<string>>, setResultComment: React.Dispatch<React.SetStateAction<string>>): Promise<number> {
     // console.clear();
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
     // console.log("\nSetup...");
     // console.log("Program", program!.programId.toString());
+
+    setRollResult("Signing verifiable randomness request...")
 
     // console.log("guess is", userGuess);
     let queue = await setupQueue(program);
@@ -290,13 +296,13 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
             const txId = await connection.sendRawTransaction(signedRandomnessTransaction.serialize(), {
                 skipPreflight: true,
-                preflightCommitment: "finalized"
+                preflightCommitment: "confirmed"
             });
 
             console.log("signedRandomnessTransaction sent:", txId);
 
             // Confirm transaction
-            await connection.confirmTransaction(txId, "finalized");
+            await connection.confirmTransaction(txId, "confirmed");
             console.log("signedRandomnessTransaction confirmed! ", txId);
 
 
@@ -357,7 +363,6 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
                         );
                     }
 
-
                     // Commit to randomness Ix
                     console.log("\nSubmitting Guess...");
                     const commitIx = await randomness.commitIx(queue);
@@ -382,7 +387,6 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
                     console.log("coin flip ix: ", coinFlipIx)
 
-
                     // const transaction = new Transaction().add(coinFlipIx);
 
                     const commitTx = await sb.asV0Tx({
@@ -396,6 +400,8 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
                     console.log('trying raw send')
 
+                    setRollResult("Submitting guess transaction with 0.01 Sol bet...")
+
                     // transaction.feePayer = wallet.publicKey;
                     // transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
@@ -403,16 +409,15 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
                     const txId = await connection.sendRawTransaction(signedCommitTransaction.serialize(), {
                         skipPreflight: true,
-                        preflightCommitment: "finalized"
+                        preflightCommitment: "confirmed"
                     });
 
                     console.log("Coin Flip Transaction sent:", txId);
 
                     // Confirm transaction
-                    await connection.confirmTransaction(txId, "finalized");
+                    await connection.confirmTransaction(txId, "confirmed");
                     // console.log("Coin Flip Transaction confirmed!");
                     console.log("Guess Transaction Confirmed!  ✅");
-
 
                     // setTimeout(async () => {
 
@@ -431,6 +436,7 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
                             const revealIx = await randomness.revealIx();
                             console.log("\nRandomness revealed! ", revealIx);
 
+                            setRollResult("Signing roll reveal transaction...")
 
                             const settleFlipIx = await settleFlipInstruction(
                                 program,
@@ -472,13 +478,13 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
                             const settleTxId = await connection.sendRawTransaction(signedRevealTransaction.serialize(), {
                                 skipPreflight: true,
-                                preflightCommitment: "finalized",
+                                preflightCommitment: "confirmed",
                             });
 
                             console.log("Settle Transaction sent:", settleTxId);
 
                             // Confirm transaction
-                            // const confirmResult = await connection.confirmTransaction(settleTxId, "finalized");
+                            // const confirmResult = await connection.confirmTransaction(settleTxId, "confirmed");
 
 
                             connection.onSignature(settleTxId, async confirmResult => {
@@ -511,13 +517,15 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
                                 if (userGuess === +result) {
                                     console.log('You won!')
+                                    setRollResult("The number rolled is: " + result);
+
+                                    setResultComment("You won 0.052 Sol!")
                                 }
                                 else {
                                     console.log('Better luck next time.')
+                                    setRollResult("The number rolled is: " + result);
+                                    setResultComment("Better luck next time.")
                                 }
-
-
-                                setRollResult(+result)
 
                             })
 
@@ -547,7 +555,7 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
                         // if (result) {
 
 
-                        //     console.log(`\The number rolled is: ... ${result}!`);
+                        //     console.log(`\The number rolled is: ...${ result }!`);
 
 
                         //     if (userGuess === +result) {
