@@ -9,16 +9,16 @@ import { AnchorProvider, Program, setProvider, Wallet } from "@coral-xyz/anchor"
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { connected } from 'process';
 import { publicDecrypt } from 'crypto';
+import LogHistory from '../log-history/LogHistory';
 
-
-type LogHistoryData = {
+export type LogHistoryData = {
     playerAddress: String,
     wager: number,
     guess: number,
     numberRolled: number,
     wonOrLost: String,
     blocktime: number,
-    blocktimeAgo: String
+    blockTimeAgo: String
 }
 
 function DieRoll() {
@@ -61,7 +61,7 @@ function DieRoll() {
     const [loading, setLoading] = useState(false);
     const [connection, setConnection] = useState(undefined);
     const [initStuffRan, setInitStuffRan] = useState(false);
-    const [logHistoryData, setLogHistoryData] = useState([]);
+    const [logHistoryData, setLogHistoryData]: any = useState([]);
 
 
 
@@ -251,7 +251,7 @@ function DieRoll() {
                                         numberRolled: parseInt(numberRolled, 10),
                                         wonOrLost,
                                         blocktime: tx.blockTime,
-                                        blocktimeAgo: calculateTimeAgo(tx.blockTime)
+                                        blockTimeAgo: calculateTimeAgo(tx.blockTime)
                                     };
 
                                     logs.push(logData);
@@ -262,7 +262,7 @@ function DieRoll() {
                                 }
                             }
                         }
-                    }, 650 * index)
+                    }, 1000 * index)
 
                 }
 
@@ -491,10 +491,37 @@ function DieRoll() {
             </div>
 
 
-                    <pre>
+            {/* Recent Rolls */}
+            <br />
+            <br />
+            <br />
+            <br />
 
-                        {JSON.stringify(logHistoryData, null, 2)}
-                    </pre>
+            <LogHistory data={logHistoryData} />
+
+            <br />
+            <br />
+            <br />
+            {/* <pre>
+
+                {JSON.stringify(logHistoryData, null, 2)}
+            </pre>  */}
+
+            {/* <div className="LogHistory">
+                <div className="table-container">
+                    <h2 className="table-title">Recent Rolls</h2>
+                    <table className="recent-rolls-table">
+                        <tbody>
+                            {logHistoryData.map((item: LogHistoryData, index: number) => (
+                                <tr key={index} className="table-row">
+                                    <td className="left-column">foo, {item.wonOrLost}</td>
+                                    <td className="right-column">{item.blockTimeAgo}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div> */}
 
         </div>
     );

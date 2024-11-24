@@ -7,7 +7,7 @@ type CustomAlertProps = {
 };
 
 const CustomAlert: React.FC<CustomAlertProps> = ({ message, onClose }) => {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
 
 //   const showAlert = () => setIsVisible(true);
   const closeAlert = () => {
