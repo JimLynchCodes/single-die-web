@@ -326,6 +326,25 @@ function DieRoll() {
                 console.log(response)
                 console.log(window)
 
+                try {
+                    const connection = new Connection(clusterApiUrl("devnet"), {
+                        commitment: "confirmed",
+
+                    });
+
+                    const accountInfo = await connection.getAccountInfo(response.publicKey);
+
+                    if (accountInfo) {
+                        console.log("Account exists!");
+                        return true;
+                    } else {
+                        console.log("Account does not exist.");
+                        return false;
+                    }
+                } catch (error) {
+                    console.error("Error checking account:", error);
+                    return false;
+                }
 
                 setConnectedAddress(response.publicKey.toString())
 
@@ -387,11 +406,10 @@ function DieRoll() {
                 </label>
                 <input
                     className="guess-input"
-                    type="number"
                     value={guessInputValue}
                     onChange={handleChange}
-                    min="1"
-                    max="6"
+                    inputMode="numeric"
+                    type="number" min="0" max="6" step="1" placeholder="-"
                 />
 
                 <br />
