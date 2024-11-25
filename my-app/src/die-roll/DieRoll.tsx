@@ -347,18 +347,6 @@ function DieRoll() {
                         console.log(accountInfo)
                     }
 
-
-                    // const accountInfo = await connection.getAccountInfo(response.publicKey);
-
-                    // if (accountInfo) {
-
-                    //     console.log(accountInfo)
-                    //     console.log(JSON.stringify(accountInfo))
-                    //     return true;
-                    // } else {
-                    //     console.log("Account does not exist.");
-                    //     return false;
-                    // }
                 } catch (error) {
                     console.error("Error checking account:", error);
                     return false;
