@@ -331,16 +331,34 @@ function DieRoll() {
                         commitment: "confirmed",
 
                     });
+                    const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
 
-                    const accountInfo = await connection.getAccountInfo(response.publicKey);
+                    const playerStatePDA = await derivePlayerStatePDA(response.publicKey, programId);
+    
+                    // Get the account info
+                    const accountInfo = await connection.getAccountInfo(playerStatePDA);
+                    
+                    if (accountInfo === null) {
+                        console.log("Account doesn't exist...");
 
-                    if (accountInfo) {
-                        console.log("Account exists!");
-                        return true;
-                    } else {
-                        console.log("Account does not exist.");
-                        return false;
                     }
+                    else {
+                            console.log("Account exists!!");
+                        console.log(accountInfo)
+                    }
+
+
+                    // const accountInfo = await connection.getAccountInfo(response.publicKey);
+
+                    // if (accountInfo) {
+
+                    //     console.log(accountInfo)
+                    //     console.log(JSON.stringify(accountInfo))
+                    //     return true;
+                    // } else {
+                    //     console.log("Account does not exist.");
+                    //     return false;
+                    // }
                 } catch (error) {
                     console.error("Error checking account:", error);
                     return false;
@@ -543,4 +561,14 @@ function DieRoll() {
 
 export default DieRoll;
 
+const derivePlayerStatePDA = async (userPublicKey: PublicKey, programId: PublicKey) => {
+    const [playerState] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from('playerState'),
+        userPublicKey.toBuffer()
+      ],
+      programId
+    );
+    return playerState;
+  };
 
