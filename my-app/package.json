@@ -20,6 +20,7 @@
     "assert": "^2.1.0",
     "browserify-fs": "^1.0.0",
     "install": "^0.13.0",
+    "logrocket": "^9.0.0",
     "npm": "^10.9.0",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",

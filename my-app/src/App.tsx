@@ -6,6 +6,8 @@ import { WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import CustomAlert from './geo-blocker-alert/GeoBlockeralert';
+import LogRocket from 'logrocket';
+LogRocket.init('zgczot/die-roller');
 
 function App() {
 
