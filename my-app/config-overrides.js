@@ -18,6 +18,7 @@ module.exports = function override(config) {
       path: require.resolve("path-browserify"),
       os: require.resolve("os-browserify"),
       fs: require.resolve("browserify-fs"),
+      "react-refresh/runtime": require.resolve('react-refresh/runtime'),
       vm: false
     }
   };

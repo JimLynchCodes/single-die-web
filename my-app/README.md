@@ -58,3 +58,5 @@ Then `mkcert create-ca`
 then `mkcert create-cert`
 
 
+
+Note: Don't use pnpm because it screws up Netlify...
