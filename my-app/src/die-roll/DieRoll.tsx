@@ -53,8 +53,6 @@ function DieRoll() {
         }
     };
 
-
-
     const wallet = useWallet();
     const [program, setProgram] = useState(null);
     const [data, setData] = useState(null);
@@ -64,15 +62,6 @@ function DieRoll() {
     const [logHistoryData, setLogHistoryData]: any = useState([]);
 
 
-
-    // const network = 'https://api.devnet.solana.com';
-    // // const programID = new PublicKey(idl.address);
-    // const programID = new PublicKey(myProgramDevAddress);
-    // const opts = {
-    //   preflightCommitment: 'confirmed',
-    //   commitment: 'confirmed',
-    // };
-    // const connection = new Connection(network, (opts.commitment as Commitment));
     useEffect(() => {
         // if (wallet.connected) {
         // initializeProgram();
@@ -85,15 +74,19 @@ function DieRoll() {
 
 
 
-    }, []);
+    }, [initStuffRan]);
 
     const runInitStuff = async () => {
 
-        if (!initStuffRan) {
-            await initializeProgram();
-            setInitStuffRan(true);
-        }
+        const initialize = async () => {
 
+            if (initStuffRan === false) {
+                setInitStuffRan(true);
+                await initializeProgram();
+            }
+        };
+
+        initialize();
     }
 
     const initializeProgram = async () => {
@@ -200,7 +193,7 @@ function DieRoll() {
 
                 for (const [index, sigInfo] of signatures.entries()) {
 
-                    // console.log('signature is: ', sigInfo)
+                    console.log('signature is: ', sigInfo)
 
                     setTimeout(async () => {
 
@@ -254,15 +247,18 @@ function DieRoll() {
                                         blockTimeAgo: calculateTimeAgo(tx.blockTime)
                                     };
 
-                                    logs.push(logData);
+                                    // logs.push(logData);
 
-                                    setLogHistoryData(logs as any)
+                                    console.log("old data: ", logHistoryData)
+                                    // setLogHistoryData([...logHistoryData, logData])
 
-                                    console.log(logs)
+                                    setLogHistoryData((prevLogHistoryData: any) => [...prevLogHistoryData, logData]);
+
+                                    console.log("new data: ", logData)
                                 }
                             }
                         }
-                    }, 1000 * index)
+                    }, 600 * index)
 
                 }
 
@@ -433,7 +429,7 @@ function DieRoll() {
                             setRollResultComment("");
                             console.log("Roll button clicked! Guessing: ", guessInputValue);
 
-                            await initializeProgram();
+                            // await initializeProgram();
 
                             const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment);
 
