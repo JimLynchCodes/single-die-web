@@ -104,9 +104,10 @@ export async function initializeGame(
     playerStateAccount: PublicKey,
     escrowAccount: PublicKey,
     // keypair: Keypair,
-    sbProgram: anchor.Program,
+    // sbProgram: anchor.Program,
     connection: Connection,
-    wallet: anchor.Wallet
+    wallet: anchor.Wallet,
+    setIsProgramInitializedForAcount: React.Dispatch<React.SetStateAction<boolean>>
 ): Promise<void> {
 
     console.log('trying to build initialize tx')
@@ -121,35 +122,14 @@ export async function initializeGame(
         })
         .instruction();
 
-    // Create a transaction
-    // const transaction = new Transaction().add(initIx);
-
-    // // Specify the fee payer (usually the wallet's public key)
-    // transaction.feePayer = wallet.publicKey;
-
-    // // Set a recent blockhash
-    // transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-
-    // // Sign the transaction
-    // const signedTx = await wallet.signTransaction(transaction);
-
-    // console.log('Signed Transaction:', signedTx);
-
     const txOpts = {
         commitment: "processed" as Commitment,
         skipPreflight: true,
         maxRetries: 0,
     };
 
-    // const signedTx = await wallet.signTransaction(initIx);
-    // console.log('signed', signedTx);
-
     try {
         const transaction = new Transaction().add(initIx);
-        // const signed = await wallet.signTransaction(transaction);
-
-        // const sim4 = await connection.simulateTransaction(signed);
-
 
         transaction.feePayer = wallet.publicKey;
         transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
@@ -166,23 +146,9 @@ export async function initializeGame(
         // Confirm transaction
         await connection.confirmTransaction(txId, "confirmed");
         console.log("Transaction confirmed!");
-        
+       
+        setIsProgramInitializedForAcount(true)
 
-        // const sig4 = await wallet.(transaction, connection);
-        // const sig4 = await connection.sendTransaction(transaction, connection);
-        // await connection.confirmTransaction(sig4, COMMITMENT);
-        // Simulate the signed transaction to check if it's valid
-        // const sim = await connection.simulateTransaction(signedTx, txOpts);
-        // console.log("Simulation result: ", sim);
-
-        // // Send the signed transaction
-        // const sig1 = await connection.sendTransaction(signedTx, txOpts);
-        // console.log("Initialize result: ", sig1);
-
-        // const txId = await connection.sendRawTransaction(signedTx.serialize(), txOpts);
-        // console.log('Transaction ID:', txId);
-
-        // return txId;
     }
     catch (err) {
         console.error(err)

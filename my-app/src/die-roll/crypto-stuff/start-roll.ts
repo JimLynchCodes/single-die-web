@@ -20,15 +20,16 @@ import idl from '../../sb_randomness.json';
 import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
 
 
-const PLAYER_STATE_SEED = "playerState";
-const ESCROW_SEED = "stateEscrow";
+
+// const ESCROW_SEED = "stateEscrow";
 // const COMMITMENT = "confirmed";
 // const COMMITMENT = "finalized" as Commitment;
 const COMMITMENT = "confirmed" as Commitment;
 
 
 async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<string>>,
-    setResultComment: React.Dispatch<React.SetStateAction<string>>
+    setResultComment: React.Dispatch<React.SetStateAction<string>>, playerStateAccount: PublicKey,
+    escrowAccount: PublicKey, escrowBump: number
 ): Promise<number> {
 
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
@@ -165,7 +166,7 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
                 console.log(program);
 
 
-                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult, setResultComment)
+                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult, setResultComment, playerStateAccount, escrowAccount, escrowBump)
             }
             // try {
             //     const greetingAccount = Keypair.generate();
@@ -202,9 +203,27 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
     return 2;
 }
 
+// export async function callInitialize(program: any) {
+
+//     let queue = await setupQueue(program);
+
+//     const sbProgram = await loadSbProgram(program.provider);
+
+    
+//     await initializeGame(
+//         program,
+//         playerStateAccount,
+//         escrowAccount,
+//         sbProgram,
+//         connection,
+//         wallet
+//     );
+// }
+
 /// takes a guess, calls to blockchain, returns the result.
 async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number,
-    setRollResult: React.Dispatch<React.SetStateAction<string>>, setResultComment: React.Dispatch<React.SetStateAction<string>>): Promise<number> {
+    setRollResult: React.Dispatch<React.SetStateAction<string>>, setResultComment: React.Dispatch<React.SetStateAction<string>>,
+playerStateAccount: PublicKey, escrowAccount: PublicKey, escrowBump: number): Promise<number> {
     // console.clear();
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
     // console.log("\nSetup...");
@@ -309,59 +328,60 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
             console.log("down here sb: ", sbProgram)
 
             // initilise example program accounts
-            const [playerStateAccount, playerStateAccountbump] = await PublicKey.findProgramAddressSync(
-                [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
-                program.programId
-            );
-            console.log("playerStateAccount: ", playerStateAccount.toString())
+            // const [playerStateAccount, playerStateAccountbump] = await PublicKey.findProgramAddressSync(
+            //     [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
+            //     program.programId
+            // );
+            // console.log("playerStateAccount: ", playerStateAccount.toString())
 
-            const [playerStateAccountSb, playerStateAccountSbbump] = await PublicKey.findProgramAddressSync(
-                [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
-                program.programId
-                // sbProgram.programId
-            );
-            console.log("playerStateAccountSb: ", playerStateAccountSb.toString())
+            // const [playerStateAccountSb, playerStateAccountSbbump] = await PublicKey.findProgramAddressSync(
+            //     [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
+            //     program.programId
+            //     // sbProgram.programId
+            // );
+
+            // console.log("playerStateAccountSb: ", playerStateAccountSb.toString())
 
             // Find the escrow account PDA and initliaze the game
-            const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
-                [Buffer.from(ESCROW_SEED)],
-                program.programId
-            );
+            // const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
+            //     [Buffer.from(ESCROW_SEED)],
+            //     program.programId
+            // );
 
             console.log("\nInitialize the game states...");
             console.log(playerStateAccount);
-            console.log(escrowAccount);
-            console.log(escrowBump);
+            // console.log(escrowAccount);
+            // console.log(escrowBump);
 
             try {
                 const accountInfo1 = await connection.getAccountInfo(playerStateAccount);
 
-                if (!accountInfo1) {
-                    console.log("Account does not exist.");
-                    // return false;
-                } else {
+                // if (!accountInfo1) {
+                //     console.log("Account does not exist.");
+                //     // return false;
+                // } else {
 
                     // You can check if the account has been initialized based on your program's requirements
                     // For example, you might check the data length or content
-                    console.log("Account found. Data length:", accountInfo1.data.length);
+                    // console.log("Account found. Data length:", accountInfo1.data.length);
 
-                    // Perform a specific check for initialization
-                    if (accountInfo1.data.length > 0) {
-                        console.log("Account is initialized.");
-                        // return true;
-                    } else {
-                        console.log("Account exists but is uninitialized.");
+                    // // Perform a specific check for initialization
+                    // if (accountInfo1.data.length > 0) {
+                    //     console.log("Account is initialized.");
+                    //     // return true;
+                    // } else {
+                    //     console.log("Account exists but is uninitialized.");
                         // return false;
 
-                        await initializeGame(
-                            program,
-                            playerStateAccount,
-                            escrowAccount,
-                            sbProgram,
-                            connection,
-                            wallet
-                        );
-                    }
+                        // await initializeGame(
+                        //     program,
+                        //     playerStateAccount,
+                        //     escrowAccount,
+                        //     sbProgram,
+                        //     connection,
+                        //     wallet
+                        // );
+                    // }
 
                     // Commit to randomness Ix
                     console.log("\nSubmitting Guess...");
@@ -570,7 +590,9 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
 
 
                     });
-                }
+
+
+                // }
             } catch (error) {
                 console.error("Error checking account:", error);
                 // return false;
