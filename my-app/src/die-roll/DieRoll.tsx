@@ -64,15 +64,10 @@ function DieRoll() {
 
 
     useEffect(() => {
-        // if (wallet.connected) {
-        // initializeProgram();
 
         runInitStuff();
 
-        // setConnectedAddress(wallet.publicKey?.toString() ?? "")
         console.log('connected here: ', wallet)
-        // }
-
 
 
     }, [initStuffRan]);
@@ -160,12 +155,16 @@ function DieRoll() {
                 throw new Error(`Failed to fetch IDL for program: ${programId}`);
             }
 
-            console.log('Fetched IDL:', idl);
+            console.log('Fetched IDL:', JSON.stringify(idl, null, 2));
 
             // Create and return the program
             const program = new Program(idl, provider);
             console.log("p");
             console.log(program)
+
+            // const gameState = await program.account.gameState.fetch(gameStatePublicKey);
+            
+            // console.log("Game state:", gameState);
 
 
             const getHistoryLogs = async (connection: Connection, programId: PublicKey): Promise<any> => {
@@ -408,6 +407,9 @@ function DieRoll() {
                 <p>
                     Guess a number and roll the die to win crypto!
                 </p>
+                <p>
+                    Correct guess wins 5.2x!
+                </p>
 
                 <br />
 
@@ -427,6 +429,10 @@ function DieRoll() {
                 {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
                 <br />
 
+                <br />
+                {/* {rollResult != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>} */}
+                <p>The bet size is currently fixed at: 0.01 Sol</p>
+                <br />
                 <br />
                 {rollResult != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>}
                 <br />
