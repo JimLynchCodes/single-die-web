@@ -106,7 +106,8 @@ export async function initializeGame(
     // keypair: Keypair,
     sbProgram: anchor.Program,
     connection: Connection,
-    wallet: anchor.Wallet
+    wallet: anchor.Wallet,
+    setAccountExistence: React.Dispatch<React.SetStateAction<boolean>>
 ): Promise<void> {
 
     console.log('trying to build initialize tx')
@@ -167,6 +168,8 @@ export async function initializeGame(
         await connection.confirmTransaction(txId, "confirmed");
         console.log("Transaction confirmed!");
         
+
+        setAccountExistence(true)
 
         // const sig4 = await wallet.(transaction, connection);
         // const sig4 = await connection.sendTransaction(transaction, connection);

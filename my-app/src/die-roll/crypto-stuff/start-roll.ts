@@ -28,7 +28,7 @@ const COMMITMENT = "confirmed" as Commitment;
 
 
 async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<string>>,
-    setResultComment: React.Dispatch<React.SetStateAction<string>>
+    setResultComment: React.Dispatch<React.SetStateAction<string>>, accountExists: boolean, setAccountExistence: React.Dispatch<React.SetStateAction<boolean>>
 ): Promise<number> {
 
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
@@ -165,7 +165,7 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
                 console.log(program);
 
 
-                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult, setResultComment)
+                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult, setResultComment, accountExists, setAccountExistence)
             }
             // try {
             //     const greetingAccount = Keypair.generate();
@@ -204,7 +204,8 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
 
 /// takes a guess, calls to blockchain, returns the result.
 async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number,
-    setRollResult: React.Dispatch<React.SetStateAction<string>>, setResultComment: React.Dispatch<React.SetStateAction<string>>): Promise<number> {
+    setRollResult: React.Dispatch<React.SetStateAction<string>>, setResultComment: React.Dispatch<React.SetStateAction<string>>,
+    accountExists: boolean, setAccountExistence: React.Dispatch<React.SetStateAction<boolean>>): Promise<number> {
     // console.clear();
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
     // console.log("\nSetup...");
@@ -266,17 +267,7 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
     console.log(wallet.publicKey)
     console.log(rngKp)
 
-    const createRandomnessTx = await sb.asV0Tx({
-        connection: sbProgram.provider.connection,
-        ixs: [ix],
-        payer: wallet.publicKey,
-        signers: [rngKp],
-        computeUnitPrice: 75_000,
-        computeUnitLimitMultiple: 1.3,
-    });
-
-    console.log("createRandomnessTx: ", createRandomnessTx);
-
+   
     if (wallet.signTransaction) {
         console.log('signing transaction');
         // const signedTx = await wallet.signTransaction(createRandomnessTx);
@@ -290,20 +281,6 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
             // const sig1 = await connection.sendTransaction(signedTx, txOpts);
             // await connection.confirmTransaction(sig1, COMMITMENT);
             // console.log("Transaction Signature: ", sig1);
-
-            const signedRandomnessTransaction = await wallet.signTransaction(createRandomnessTx);
-            console.log('signedRandomnessTransaction', signedRandomnessTransaction);
-
-            const txId = await connection.sendRawTransaction(signedRandomnessTransaction.serialize(), {
-                skipPreflight: true,
-                preflightCommitment: "confirmed"
-            });
-
-            console.log("signedRandomnessTransaction sent:", txId);
-
-            // Confirm transaction
-            await connection.confirmTransaction(txId, "confirmed");
-            console.log("signedRandomnessTransaction confirmed! ", txId);
 
 
             console.log("down here sb: ", sbProgram)
@@ -333,6 +310,53 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
             console.log(escrowAccount);
             console.log(escrowBump);
 
+
+
+            if (!accountExists) {
+                await initializeGame(
+                    program,
+                    playerStateAccount,
+                    escrowAccount,
+                    sbProgram,
+                    connection,
+                    wallet,
+                    setAccountExistence
+                )
+
+            }
+    
+                
+
+
+            const createRandomnessTx = await sb.asV0Tx({
+                connection: sbProgram.provider.connection,
+                ixs: [ix],
+                payer: wallet.publicKey,
+                signers: [rngKp],
+                computeUnitPrice: 75_000,
+                computeUnitLimitMultiple: 1.3,
+            });
+        
+            console.log("createRandomnessTx: ", createRandomnessTx);
+        
+
+            const signedRandomnessTransaction = await wallet.signTransaction(createRandomnessTx);
+            console.log('signedRandomnessTransaction', signedRandomnessTransaction);
+
+            const txId = await connection.sendRawTransaction(signedRandomnessTransaction.serialize(), {
+                skipPreflight: true,
+                preflightCommitment: "confirmed"
+            });
+
+            console.log("signedRandomnessTransaction sent:", txId);
+
+            // Confirm transaction
+            await connection.confirmTransaction(txId, "confirmed");
+            console.log("signedRandomnessTransaction confirmed! ", txId);
+
+
+
+
             try {
                 const accountInfo1 = await connection.getAccountInfo(playerStateAccount);
 
@@ -353,14 +377,14 @@ async function startRollg(program: any, keypair: Keypair, connection: Connection
                         console.log("Account exists but is uninitialized.");
                         // return false;
 
-                        await initializeGame(
-                            program,
-                            playerStateAccount,
-                            escrowAccount,
-                            sbProgram,
-                            connection,
-                            wallet
-                        );
+                        // await initializeGame(
+                        //     program,
+                        //     playerStateAccount,
+                        //     escrowAccount,
+                        //     sbProgram,
+                        //     connection,
+                        //     wallet
+                        // );
                     }
 
                     // Commit to randomness Ix

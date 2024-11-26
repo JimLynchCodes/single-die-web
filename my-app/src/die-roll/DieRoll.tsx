@@ -28,6 +28,7 @@ function DieRoll() {
     const [rollResult, setRollResult] = useState("");
     const [rollResultComment, setRollResultComment] = useState("");
     const [connectedAddress, setConnectedAddress] = useState("");
+    const [accountExistence, setAccountExistence] = useState(false);
     const [currentNetwork, setCurrentNetwork] = useState("");
 
     const anchorWallet = useAnchorWallet();
@@ -341,10 +342,13 @@ function DieRoll() {
                     if (accountInfo === null) {
                         console.log("Account doesn't exist...");
 
+                        setAccountExistence(false);
+                        
                     }
                     else {
-                            console.log("Account exists!!");
+                        console.log("Account exists!!");
                         console.log(accountInfo)
+                        setAccountExistence(true);
                     }
 
                 } catch (error) {
@@ -429,6 +433,9 @@ function DieRoll() {
                 <br />
                 <br />
 
+                {!accountExistence && connectedAddress &&
+                <p>Please sign an "initialization" transaction to enable rolls with this address.</p>}
+
                 {connectedAddress && <button
                     type="submit"
                     style={{
@@ -455,7 +462,7 @@ function DieRoll() {
 
                             // await initializeProgram();
 
-                            const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment);
+                            const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment, accountExistence, setAccountExistence);
 
                             // setRollResult(result)
                         }
