@@ -389,7 +389,7 @@ function DieRoll() {
                 <br />
 
                 <p>
-                    Guess a number and roll the die to win crypto!
+                    Guess a number and roll the die to win!
                 </p>
                 <p>
                     Every correct guess wins 5.2x!
