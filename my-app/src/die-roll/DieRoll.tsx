@@ -163,7 +163,7 @@ function DieRoll() {
             console.log(program)
 
             // const gameState = await program.account.gameState.fetch(gameStatePublicKey);
-            
+
             // console.log("Game state:", gameState);
 
 
@@ -373,28 +373,12 @@ function DieRoll() {
 
             {/* <WalletMultiButton /> */}
 
-            {connectedAddress && <div>
-                <i>
+            <i style={{ fontSize: "14px" }}>
+                Note: devnet is currently the only supported network!
+                <br />
+                <br />
+            </i>
 
-                    {"Connected wallet: "}
-                    <a href={"https://solscan.io/account/" + connectedAddress}>{connectedAddress.slice(0, 5) + '...' + connectedAddress.slice(connectedAddress.length - 6, connectedAddress.length - 1)}</a>
-                </i>
-            </div>
-            }
-            {
-                connectedAddress && <div>
-                    <br />
-
-                    <i>
-                        Note: devnet is currently the only supported network!
-                        <br />
-                        Please switch your wallet to devnet.
-                    </i>
-                    <br />
-                    <br />
-                    <br />
-                </div>
-            }
 
             <h1>Die Roller</h1>
 
@@ -408,9 +392,62 @@ function DieRoll() {
                     Guess a number and roll the die to win crypto!
                 </p>
                 <p>
-                    Correct guess wins 5.2x!
+                    Every correct guess wins 5.2x!
                 </p>
 
+                {connectedAddress && <div>
+                    <br />
+                    <br />
+                    <i>
+
+                        {"Connected wallet: "}
+                        <a href={"https://solscan.io/account/" + connectedAddress}>{connectedAddress.slice(0, 5) + '...' + connectedAddress.slice(connectedAddress.length - 6, connectedAddress.length - 1)}</a>
+                    </i>
+                </div>
+                }
+
+
+                {!connectedAddress &&
+                    <>
+                        <br />
+                        <button
+                            type="submit"
+                            style={{
+                                margin: "20px",
+                                fontSize: "24px",
+                                padding: "15px 30px",
+                                borderRadius: "10px",
+                                background: "linear-gradient(145deg, #ff9800, #ffc107)",
+                                color: "#fff",
+                                fontWeight: "bold",
+                                border: "none",
+                                boxShadow: "0 6px #d17b00",
+                                cursor: "pointer",
+                                transition: "transform 0.2s, box-shadow 0.2s",
+                            }}
+                            onClick={async (_e: any) => {
+
+                                connectWallet()
+
+                            }}
+                            onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                                button.style.transform = "translateY(4px)";
+                                button.style.boxShadow = "0 2px #d17b00";
+                            }}
+                            onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                                button.style.transform = "translateY(0)";
+                                button.style.boxShadow = "0 6px #d17b00";
+                            }}
+                        >
+                            Connect wallet
+                        </button>
+                        <br />
+                    </>}
+
+
+                <br />
                 <br />
 
                 <label>
@@ -433,94 +470,74 @@ function DieRoll() {
                 {/* {rollResult != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>} */}
                 <p>The bet size is currently fixed at: 0.01 Sol</p>
                 <br />
-                <br />
-                {rollResult != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>}
-                <br />
-                {rollResultComment != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResultComment}</p>}
-                <br />
-                <br />
+                {rollResult != "" &&
+                    <>
+                        <br />
+                        <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>
+                        <br />
+                    </>}
+
+                {rollResultComment != "" &&
+
+                    <>
+                        <br />
+                        <p style={{ color: "white", marginTop: "10px" }}>{rollResultComment}</p>
+                        <br />
+                    </>}
+
 
                 {!accountExistence && connectedAddress &&
                     <p>Please sign an "initialization" transaction to enable rolls with this address.</p>}
 
-                {connectedAddress && <button
-                    type="submit"
-                    style={{
-                        margin: "20px",
-                        fontSize: "24px",
-                        padding: "15px 30px",
-                        borderRadius: "10px",
-                        background: "linear-gradient(145deg, #ff9800, #ffc107)",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        border: "none",
-                        boxShadow: "0 6px #d17b00",
-                        cursor: "pointer",
-                        transition: "transform 0.2s, box-shadow 0.2s",
-                    }}
-                    onClick={async (_e: any) => {
+                {connectedAddress && <>
 
-                        if (guessInputValue < 1 || guessInputValue > 6) {
-                            setError("Please enter a number between 1 and 6.");
-                        } else {
-                            setError("");
-                            setRollResultComment("");
-                            console.log("Roll button clicked! Guessing: ", guessInputValue);
+                    {/* <br /> */}
+                    <button
+                        type="submit"
+                        style={{
+                            margin: "20px",
+                            fontSize: "24px",
+                            padding: "15px 30px",
+                            borderRadius: "10px",
+                            background: "linear-gradient(145deg, #ff9800, #ffc107)",
+                            color: "#fff",
+                            fontWeight: "bold",
+                            border: "none",
+                            boxShadow: "0 6px #d17b00",
+                            cursor: "pointer",
+                            transition: "transform 0.2s, box-shadow 0.2s",
+                        }}
+                        onClick={async (_e: any) => {
 
-                            // await initializeProgram();
+                            if (guessInputValue < 1 || guessInputValue > 6) {
+                                setError("Please enter a number between 1 and 6.");
+                            } else {
+                                setError("");
+                                setRollResultComment("");
+                                console.log("Roll button clicked! Guessing: ", guessInputValue);
 
-                            const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment, accountExistence, setAccountExistence);
+                                // await initializeProgram();
 
-                            // setRollResult(result)
-                        }
+                                const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment, accountExistence, setAccountExistence);
 
-                    }}
-                    onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                        button.style.transform = "translateY(4px)";
-                        button.style.boxShadow = "0 2px #d17b00";
-                    }}
-                    onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                        button.style.transform = "translateY(0)";
-                        button.style.boxShadow = "0 6px #d17b00";
-                    }}
-                >
-                    Roll
-                </button>}
-                {!connectedAddress && <button
-                    type="submit"
-                    style={{
-                        margin: "20px",
-                        fontSize: "24px",
-                        padding: "15px 30px",
-                        borderRadius: "10px",
-                        background: "linear-gradient(145deg, #ff9800, #ffc107)",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        border: "none",
-                        boxShadow: "0 6px #d17b00",
-                        cursor: "pointer",
-                        transition: "transform 0.2s, box-shadow 0.2s",
-                    }}
-                    onClick={async (_e: any) => {
+                                // setRollResult(result)
+                            }
 
-                        connectWallet()
-
-                    }}
-                    onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                        button.style.transform = "translateY(4px)";
-                        button.style.boxShadow = "0 2px #d17b00";
-                    }}
-                    onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                        button.style.transform = "translateY(0)";
-                        button.style.boxShadow = "0 6px #d17b00";
-                    }}
-                >
-                    Connect wallet
-                </button>}
+                        }}
+                        onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
+                            const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                            button.style.transform = "translateY(4px)";
+                            button.style.boxShadow = "0 2px #d17b00";
+                        }}
+                        onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
+                            const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                            button.style.transform = "translateY(0)";
+                            button.style.boxShadow = "0 6px #d17b00";
+                        }}
+                    >
+                        Roll
+                    </button>
+                </>}
 
             </div>
 

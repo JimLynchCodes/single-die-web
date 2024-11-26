@@ -2,6 +2,8 @@
 .table-container {
     font-family: Arial, sans-serif;
     color: white; /* White text for the title */
+    display: grid;
+    justify-content: center;
   }
   
   /* Title styling */
