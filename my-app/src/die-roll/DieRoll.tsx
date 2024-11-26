@@ -401,7 +401,7 @@ function DieRoll() {
                     <i>
 
                         {"Connected wallet: "}
-                        <a href={"https://solscan.io/account/" + connectedAddress}>{connectedAddress.slice(0, 5) + '...' + connectedAddress.slice(connectedAddress.length - 6, connectedAddress.length - 1)}</a>
+                        <a href={"https://solscan.io/account/" + connectedAddress + "?cluster=devnet"}>{connectedAddress.slice(0, 5) + '...' + connectedAddress.slice(connectedAddress.length - 6, connectedAddress.length - 1)}</a>
                     </i>
                 </div>
                 }
