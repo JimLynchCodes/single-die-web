@@ -47,12 +47,11 @@ function DieRoll() {
 
         const numValue = parseInt(inputValue, 10);
 
-        // Validate the value is between 1 and 6
-        if (numValue >= 1 && numValue <= 6) {
-            const inputValue = numValue.toString().replace(/^0+/, '').slice(0, 1);
-            setGuessInputValue(+inputValue);
-            setError("");
-        }
+        const lastDigit = numValue.toString().slice(numValue.toString().length - 1, numValue.toString().length);
+
+        setGuessInputValue(+lastDigit);
+        setError("");
+        // }
     };
 
     const wallet = useWallet();
@@ -417,10 +416,10 @@ function DieRoll() {
                 </label>
                 <input
                     className="guess-input"
-                    value={guessInputValue}
+                    value={guessInputValue.toString().replace(/^0+/, '')}
                     onChange={handleChange}
                     inputMode="numeric"
-                    type="number" min="0" max="6" step="1" placeholder="-"
+                    type="text" min="0" max="100" step="1" placeholder="-"
 
                 />
 
@@ -455,7 +454,7 @@ function DieRoll() {
                     }}
                     onClick={async (_e: any) => {
 
-                        if (guessInputValue === 0) {
+                        if (guessInputValue < 1 || guessInputValue > 6) {
                             setError("Please enter a number between 1 and 6.");
                         } else {
                             setError("");
