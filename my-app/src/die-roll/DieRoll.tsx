@@ -49,7 +49,8 @@ function DieRoll() {
 
         // Validate the value is between 1 and 6
         if (numValue >= 1 && numValue <= 6) {
-            setGuessInputValue(numValue);
+            const inputValue = numValue.toString().replace(/^0+/, '').slice(0, 1);
+            setGuessInputValue(+inputValue);
             setError("");
         }
     };
@@ -335,15 +336,15 @@ function DieRoll() {
                     const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
 
                     const playerStatePDA = await derivePlayerStatePDA(response.publicKey, programId);
-    
+
                     // Get the account info
                     const accountInfo = await connection.getAccountInfo(playerStatePDA);
-                    
+
                     if (accountInfo === null) {
                         console.log("Account doesn't exist...");
 
                         setAccountExistence(false);
-                        
+
                     }
                     else {
                         console.log("Account exists!!");
@@ -420,6 +421,7 @@ function DieRoll() {
                     onChange={handleChange}
                     inputMode="numeric"
                     type="number" min="0" max="6" step="1" placeholder="-"
+
                 />
 
                 <br />
@@ -434,7 +436,7 @@ function DieRoll() {
                 <br />
 
                 {!accountExistence && connectedAddress &&
-                <p>Please sign an "initialization" transaction to enable rolls with this address.</p>}
+                    <p>Please sign an "initialization" transaction to enable rolls with this address.</p>}
 
                 {connectedAddress && <button
                     type="submit"
@@ -558,12 +560,12 @@ export default DieRoll;
 
 const derivePlayerStatePDA = async (userPublicKey: PublicKey, programId: PublicKey) => {
     const [playerState] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from('playerState'),
-        userPublicKey.toBuffer()
-      ],
-      programId
+        [
+            Buffer.from('playerState'),
+            userPublicKey.toBuffer()
+        ],
+        programId
     );
     return playerState;
-  };
+};
 
