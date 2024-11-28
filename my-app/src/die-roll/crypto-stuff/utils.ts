@@ -141,16 +141,8 @@ export async function initializeGame(
         skipPreflight: true,
         maxRetries: 0,
     };
-
-    // const signedTx = await wallet.signTransaction(initIx);
-    // console.log('signed', signedTx);
-
     try {
         const transaction = new Transaction().add(initIx);
-        // const signed = await wallet.signTransaction(transaction);
-
-        // const sim4 = await connection.simulateTransaction(signed);
-
 
         transaction.feePayer = wallet.publicKey;
         transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
@@ -171,21 +163,6 @@ export async function initializeGame(
 
         setAccountExistence(true)
 
-        // const sig4 = await wallet.(transaction, connection);
-        // const sig4 = await connection.sendTransaction(transaction, connection);
-        // await connection.confirmTransaction(sig4, COMMITMENT);
-        // Simulate the signed transaction to check if it's valid
-        // const sim = await connection.simulateTransaction(signedTx, txOpts);
-        // console.log("Simulation result: ", sim);
-
-        // // Send the signed transaction
-        // const sig1 = await connection.sendTransaction(signedTx, txOpts);
-        // console.log("Initialize result: ", sig1);
-
-        // const txId = await connection.sendRawTransaction(signedTx.serialize(), txOpts);
-        // console.log('Transaction ID:', txId);
-
-        // return txId;
     }
     catch (err) {
         console.error(err)

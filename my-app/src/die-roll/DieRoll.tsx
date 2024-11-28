@@ -4,7 +4,7 @@ import dieRollImg from '../die-roll.gif';
 import './crypto-stuff/utils';
 import startRoll from './crypto-stuff/start-roll';
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
-import { clusterApiUrl, Commitment, Connection, PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Commitment, ConfirmOptions, Connection, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { AnchorProvider, Program, setProvider, Wallet } from "@coral-xyz/anchor";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { connected } from 'process';
@@ -21,6 +21,11 @@ export type LogHistoryData = {
     blockTimeAgo: String
 }
 
+const PLAYER_STATE_SEED = "playerState";
+const GAME_STATE_SEED = "gameState";
+
+const COMMITMENT = "confirmed";
+
 function DieRoll() {
 
     const [guessInputValue, setGuessInputValue] = useState(0);
@@ -30,6 +35,16 @@ function DieRoll() {
     const [connectedAddress, setConnectedAddress] = useState("");
     const [accountExistence, setAccountExistence] = useState(false);
     const [currentNetwork, setCurrentNetwork] = useState("");
+
+    const wallet = useWallet();
+    const [program, setProgram] = useState(null);
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [connection, setConnection] = useState(undefined);
+    const [initStuffRan, setInitStuffRan] = useState(false);
+    const [logHistoryData, setLogHistoryData]: any = useState([]);
+
+    const [anchorProvider, setAnchorProvider] = useState<AnchorProvider | null>(null);
 
     const anchorWallet = useAnchorWallet();
 
@@ -54,13 +69,6 @@ function DieRoll() {
         // }
     };
 
-    const wallet = useWallet();
-    const [program, setProgram] = useState(null);
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [connection, setConnection] = useState(undefined);
-    const [initStuffRan, setInitStuffRan] = useState(false);
-    const [logHistoryData, setLogHistoryData]: any = useState([]);
 
 
     useEffect(() => {
@@ -91,7 +99,8 @@ function DieRoll() {
             console.log('initializing program');
 
             // Constants
-            const programId = "3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7"
+            // const programId = "3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7"
+            const programId = "4WQeVUwiBic2FLsGEvtRLLN7muFpwDVr62h5yWiPU8Hk"
 
             const network = 'https://api.devnet.solana.com';  // Devnet endpoint
             const opts = {
@@ -146,6 +155,8 @@ function DieRoll() {
 
             const provider = new AnchorProvider(connection, (wallet as any), { preflightCommitment: 'processed' });
 
+            setAnchorProvider(provider)
+
             console.log(provider)
 
             const pid = new PublicKey(programId); // Program ID as PublicKey
@@ -161,6 +172,7 @@ function DieRoll() {
             const program = new Program(idl, provider);
             console.log("p");
             console.log(program)
+            // setProgram(program)
 
             // const gameState = await program.account.gameState.fetch(gameStatePublicKey);
 
@@ -331,7 +343,8 @@ function DieRoll() {
                         commitment: "confirmed",
 
                     });
-                    const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
+                    // const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
+                    const programId = new PublicKey('4WQeVUwiBic2FLsGEvtRLLN7muFpwDVr62h5yWiPU8Hk');
 
                     const playerStatePDA = await derivePlayerStatePDA(response.publicKey, programId);
 
@@ -369,210 +382,7 @@ function DieRoll() {
     return (
         <div>
 
-            <br />
-
-            {/* <WalletMultiButton /> */}
-
-            <i style={{ fontSize: "14px" }}>
-                Note: devnet is currently the only supported network!
-                <br />
-                <br />
-            </i>
-
-
-            <h1>Die Roller</h1>
-
-            <div>
-
-                <img src={dieRollImg} width="40px" />
-                <br />
-                <br />
-
-                <p>
-                    Guess a number and roll the die!
-                </p>
-                <p>
-                    Every correct guess wins 5.2x!
-                </p>
-
-                {connectedAddress && <div>
-                    <br />
-                    <br />
-                    <i>
-
-                        {"Connected wallet: "}
-                        <a href={"https://solscan.io/account/" + connectedAddress + "?cluster=devnet"}>{connectedAddress.slice(0, 5) + '...' + connectedAddress.slice(connectedAddress.length - 6, connectedAddress.length - 1)}</a>
-                    </i>
-                </div>
-                }
-
-
-                {!connectedAddress &&
-                    <>
-                        <br />
-                        <button
-                            type="submit"
-                            style={{
-                                margin: "20px",
-                                fontSize: "24px",
-                                padding: "15px 30px",
-                                borderRadius: "10px",
-                                background: "linear-gradient(145deg, #ff9800, #ffc107)",
-                                color: "#fff",
-                                fontWeight: "bold",
-                                border: "none",
-                                boxShadow: "0 6px #d17b00",
-                                cursor: "pointer",
-                                transition: "transform 0.2s, box-shadow 0.2s",
-                            }}
-                            onClick={async (_e: any) => {
-
-                                connectWallet()
-
-                            }}
-                            onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                                button.style.transform = "translateY(4px)";
-                                button.style.boxShadow = "0 2px #d17b00";
-                            }}
-                            onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                                button.style.transform = "translateY(0)";
-                                button.style.boxShadow = "0 6px #d17b00";
-                            }}
-                        >
-                            Connect wallet
-                        </button>
-                        <br />
-                    </>}
-
-
-                <br />
-                <br />
-
-                <label>
-                    Your Guess:&nbsp;
-                </label>
-                <input
-                    className="guess-input"
-                    value={guessInputValue.toString().replace(/^0+/, '')}
-                    onChange={handleChange}
-                    inputMode="numeric"
-                    type="text" min="0" max="100" step="1" placeholder="-"
-
-                />
-
-                <br />
-                {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
-                <br />
-
-                <br />
-                {/* {rollResult != "" && <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>} */}
-                <p>The bet size is currently fixed at: 0.01 Sol</p>
-                <br />
-                {rollResult != "" &&
-                    <>
-                        <br />
-                        <p style={{ color: "white", marginTop: "10px" }}>{rollResult}</p>
-                        <br />
-                    </>}
-
-                {rollResultComment != "" &&
-
-                    <>
-                        <br />
-                        <p style={{ color: "white", marginTop: "10px" }}>{rollResultComment}</p>
-                        <br />
-                    </>}
-
-
-                {!accountExistence && connectedAddress &&
-                    <p>Please sign an "initialization" transaction to enable rolls with this address.</p>}
-
-                {connectedAddress && <>
-
-                    {/* <br /> */}
-                    <button
-                        type="submit"
-                        style={{
-                            margin: "20px",
-                            fontSize: "24px",
-                            padding: "15px 30px",
-                            borderRadius: "10px",
-                            background: "linear-gradient(145deg, #ff9800, #ffc107)",
-                            color: "#fff",
-                            fontWeight: "bold",
-                            border: "none",
-                            boxShadow: "0 6px #d17b00",
-                            cursor: "pointer",
-                            transition: "transform 0.2s, box-shadow 0.2s",
-                        }}
-                        onClick={async (_e: any) => {
-
-                            if (guessInputValue < 1 || guessInputValue > 6) {
-                                setError("Please enter a number between 1 and 6.");
-                            } else {
-                                setError("");
-                                setRollResultComment("");
-                                console.log("Roll button clicked! Guessing: ", guessInputValue);
-
-                                // await initializeProgram();
-
-                                const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment, accountExistence, setAccountExistence);
-
-                                // setRollResult(result)
-                            }
-
-                        }}
-                        onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
-                            const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                            button.style.transform = "translateY(4px)";
-                            button.style.boxShadow = "0 2px #d17b00";
-                        }}
-                        onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
-                            const button = e.currentTarget; // Explicitly an HTMLButtonElement
-                            button.style.transform = "translateY(0)";
-                            button.style.boxShadow = "0 6px #d17b00";
-                        }}
-                    >
-                        Roll
-                    </button>
-                </>}
-
-            </div>
-
-
-            {/* Recent Rolls */}
-            <br />
-            <br />
-            <br />
-            <br />
-
-            <LogHistory data={logHistoryData} />
-
-            <br />
-            <br />
-            <br />
-            {/* <pre>
-
-                {JSON.stringify(logHistoryData, null, 2)}
-            </pre>  */}
-
-            {/* <div className="LogHistory">
-                <div className="table-container">
-                    <h2 className="table-title">Recent Rolls</h2>
-                    <table className="recent-rolls-table">
-                        <tbody>
-                            {logHistoryData.map((item: LogHistoryData, index: number) => (
-                                <tr key={index} className="table-row">
-                                    <td className="left-column">foo, {item.wonOrLost}</td>
-                                    <td className="right-column">{item.blockTimeAgo}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div> */}
+            Uh oh! Down for maintenance...
 
         </div>
     );

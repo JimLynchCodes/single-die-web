@@ -16,7 +16,7 @@ import { createCoinFlipInstruction } from "./utils";
 import { settleFlipInstruction } from "./utils";
 import { ensureEscrowFunded } from "./utils";
 // import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
-import idl from '../../sb_randomness.json';
+// import idl from '../../sb_randomness.json';
 import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
 
 
@@ -86,7 +86,8 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
 
 
 
-        const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
+        const programId = new PublicKey('4WQeVUwiBic2FLsGEvtRLLN7muFpwDVr62h5yWiPU8Hk');
+        // const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
 
         const idl = (await Program.fetchIdl(programId, provider))!;
 
@@ -105,7 +106,8 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
             // console.log("Program initialized:", program);
             // console.log("program: ", program)
 
-            const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
+            const programId = new PublicKey('4WQeVUwiBic2FLsGEvtRLLN7muFpwDVr62h5yWiPU8Hk');
+            // const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
 
             // Use Program.at() instead of fetchIdl
             // const program = await Program.at(programId, provider);
@@ -206,17 +208,11 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
 async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number,
     setRollResult: React.Dispatch<React.SetStateAction<string>>, setResultComment: React.Dispatch<React.SetStateAction<string>>,
     accountExists: boolean, setAccountExistence: React.Dispatch<React.SetStateAction<boolean>>): Promise<number> {
-    // console.clear();
-    // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
-    // console.log("\nSetup...");
-    // console.log("Program", program!.programId.toString());
 
     setRollResult("Signing verifiable randomness request...")
 
-    // console.log("guess is", userGuess);
     let queue = await setupQueue(program);
     console.log("queue: ", queue);
-    // const myProgram = await initializeMyProgram(program!.provider);
     console.log("my program: ", program);
     const sbProgram = await loadSbProgram(program.provider);
     console.log("switchboard program: ", sbProgram);
