@@ -5,12 +5,12 @@ import './crypto-stuff/utils';
 import startRoll from './crypto-stuff/start-roll';
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react';
 import { clusterApiUrl, Commitment, Connection, PublicKey } from '@solana/web3.js';
-import { AnchorProvider, Program, setProvider, Wallet } from "@coral-xyz/anchor";
+import { AnchorProvider, Idl, Program, setProvider, Wallet } from "@coral-xyz/anchor";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { connected } from 'process';
 import { publicDecrypt } from 'crypto';
 import LogHistory from '../log-history/LogHistory';
-import { initializeGame, loadSbProgram, setupQueue } from './crypto-stuff/utils';
+import { initializeGameForUser, initializeMyProgram, loadSbProgram, setupQueue } from './crypto-stuff/utils';
 
 export type LogHistoryData = {
     playerAddress: String,
@@ -30,6 +30,7 @@ function DieRoll() {
     const [rollResultComment, setRollResultComment] = useState("");
     const [connectedAddress, setConnectedAddress] = useState("");
     const [currentNetwork, setCurrentNetwork] = useState("");
+    const [idl, setIdl]: [string | null, any] = useState("");
 
     const anchorWallet = useAnchorWallet();
 
@@ -65,8 +66,11 @@ function DieRoll() {
     const [playerStateAccount, setPlayerStateAccount] = useState(emptyPublicKey);
     const [escrowAccount, setEscrowAccount] = useState(emptyPublicKey);
     const [escrowBump, setEscrowBump] = useState(0);
+    const [gameAccount, setGameAccount] = useState(emptyPublicKey);
+    const [gameAccountBump, setGameAccountBump] = useState(0);
     const [initStuffRan, setInitStuffRan] = useState(false);
     const [isProgramInitializedForAcount, setIsProgramInitializedForAcount] = useState(false);
+    const [gameAccountExists, setGameAccountExists] = useState(false);
     const [logHistoryData, setLogHistoryData]: any = useState([]);
 
 
@@ -103,7 +107,7 @@ function DieRoll() {
             console.log('initializing program');
 
             // Constants
-            const programId = "3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7"
+            const programId = "9zYgmAvDrAi64rLuThmCTGF5StSwiRooV3e5k4nd7AAP"
 
             const network = 'https://api.devnet.solana.com';  // Devnet endpoint
             const opts = {
@@ -116,29 +120,6 @@ function DieRoll() {
                 commitment: "confirmed",
 
             });
-
-
-
-
-
-            // setConnection(connection)
-
-            // Define the program ID from the IDL (replace with your actual program ID)
-            // const programID = new PublicKey("6Txeg9dhUq3aNhgoATKW1eeoxgdjvyxHxn2xhtELi7Ba");
-            // Set up the provider
-            // const provider = new AnchorProvider(
-            //     connection,
-            //     wallet as Wallet,  // Use local wallet for provider (use your wallet here if needed)
-            //     opts
-            // );
-            // setProvider(provider);
-            // const idl = require("./sb_randomness.json");
-            // Generate the program client from IDL.
-            // const program = new Program(idl);
-            // console.log("program", program)
-            // Execute the RPC.
-            // await program.rpc.initialize();
-            // setProgram(program);
 
             // const version = await response.getVersion();
             console.log('Connected to:', connection.rpcEndpoint);
@@ -161,37 +142,27 @@ function DieRoll() {
             const pid = new PublicKey(programId); // Program ID as PublicKey
             const idl = await Program.fetchIdl(pid, provider);
 
+            setIdl(idl);
+
+
             if (!idl) {
                 throw new Error(`Failed to fetch IDL for program: ${programId}`);
             }
 
             console.log('Fetched IDL:', idl);
 
-            // Create and return the program
-            const program = new Program(idl, provider);
-            console.log("prg");
-            console.log(program)
-            setProgram(program)
+
 
             if (wallet) {
-                const PLAYER_STATE_SEED = "playerState";
 
-                console.log(wallet?.publicKey?.toBuffer())
+                if (!wallet.publicKey) {
+                    console.log('No public key on wallet... :(')
+                }
 
-                const [playerStateAccount, playerStateAccountbump] = PublicKey.findProgramAddressSync(
-                    [Buffer.from(PLAYER_STATE_SEED), wallet?.publicKey?.toBuffer() ?? Buffer.alloc(0)],
-                    program.programId
-                );
-                setPlayerStateAccount(playerStateAccount)
+                else {
 
-                const ESCROW_SEED = "stateEscrow";
-                const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
-                    [Buffer.from(ESCROW_SEED)],
-                    program.programId
-                );
-
-                setEscrowAccount(escrowAccount)
-                setEscrowBump(escrowBump)
+                    // moved to connect fn
+                }
             }
 
 
@@ -338,12 +309,11 @@ function DieRoll() {
         try {
             const { solana } = window;
 
+            console.log(solana)
+
             if (solana) {
 
-
-                console.log("real net")
                 console.log(window.solana.rpcEndpoint)
-
 
                 const response = await solana.connect();
                 console.log("Connected with public key:", response.publicKey.toString());
@@ -354,17 +324,21 @@ function DieRoll() {
                 console.log(response)
                 console.log(window)
 
+                setConnectedAddress(response.publicKey.toString())
+
                 try {
                     const connection = new Connection(clusterApiUrl("devnet"), {
                         commitment: "confirmed",
 
                     });
-                    const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
+                    const programId = new PublicKey('9zYgmAvDrAi64rLuThmCTGF5StSwiRooV3e5k4nd7AAP');
 
                     const playerStatePDA = await derivePlayerStatePDA(response.publicKey, programId);
+                    const gameAccountPDA = await deriveGameAccountPDA(programId);
 
                     // Get the account info
                     const accountInfo = await connection.getAccountInfo(playerStatePDA);
+                    const gameAccountInfo = await connection.getAccountInfo(gameAccountPDA);
 
                     if (accountInfo === null) {
                         console.log("Account doesn't exist...");
@@ -376,12 +350,76 @@ function DieRoll() {
                         setIsProgramInitializedForAcount(true)
                     }
 
+                    if (gameAccountInfo === null) {
+                        console.log("Game Account doesn't exist...");
+                        setGameAccountExists(false)
+                    }
+                    else {
+                        console.log("Game Account exists!!");
+                        console.log(gameAccountInfo)
+                        setGameAccountExists(true)
+                    }
+
+                    console.log("huh? " + gameAccountInfo)
+
+                    const wallet = window.solana; // Assuming Phantom wallet
+
+                    const provider = new AnchorProvider(connection, wallet, {
+                        preflightCommitment: "processed",
+                    });
+
+                    // Create and return the program
+                    const program = new Program(idl as unknown as Idl, provider);
+                    console.log("prg");
+                    console.log(program)
+                    setProgram(program)
+
+                    const PLAYER_STATE_SEED = "playerState";
+
+                    console.log(wallet?.publicKey?.toBuffer())
+                    console.log("program id calling: {}", program.programId.toString())
+                    console.log("huh? " + JSON.stringify(gameAccountInfo))
+                    // const [playerStateAccount, playerStateAccountbump] = PublicKey.findProgramAddressSync(
+                    //     [Buffer.from(PLAYER_STATE_SEED), wallet?.publicKey?.toBuffer() ?? Buffer.alloc(0)],
+                    //     program.programId
+                    // );
+
+                    const [playerStateAccount, bump] = await PublicKey.findProgramAddress(
+                        [
+                            Buffer.from(PLAYER_STATE_SEED), // Match the program seed
+                            response.publicKey.toBuffer() // Match the user key
+                        ],
+                        program.programId // Program ID must match the deployed program
+                    );
+                    setPlayerStateAccount(playerStateAccount)
+
+                    const ESCROW_SEED = "stateEscrow";
+                    const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
+                        [Buffer.from(ESCROW_SEED)],
+                        program.programId
+                    );
+
+                    setEscrowAccount(escrowAccount)
+                    setEscrowBump(escrowBump)
+
+                    const GAME_ACCOUNT_SEED = "gameAccount";
+                    const [gameAccount, gameAccountBump] = await PublicKey.findProgramAddressSync(
+                        [Buffer.from(GAME_ACCOUNT_SEED)],
+                        program.programId
+                    );
+
+                    setGameAccount(gameAccount)
+                    setGameAccountBump(gameAccountBump)
+
+                    console.log("gameAccountInfo base:", gameAccount.toBase58());
+                    console.log("gameAccountInfo string:", gameAccount.toString());
+
                 } catch (error) {
                     console.error("Error checking account:", error);
                     return false;
                 }
 
-                setConnectedAddress(response.publicKey.toString())
+
 
             } else {
                 console.error("Phantom Wallet not available");
@@ -484,7 +522,7 @@ function DieRoll() {
 
                             // await initializeProgram();
 
-                            const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment, playerStateAccount, escrowAccount, escrowBump);
+                            const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment, playerStateAccount, gameAccount, escrowAccount, escrowBump);
 
                             // setRollResult(result)
                         }
@@ -504,7 +542,7 @@ function DieRoll() {
                     Roll
                 </button>}
 
-                {connectedAddress && !isProgramInitializedForAcount && <button
+                {connectedAddress && <button
                     type="submit"
                     style={{
                         margin: "20px",
@@ -551,13 +589,13 @@ function DieRoll() {
                             // const sbProgram = await loadSbProgram((program as Program).provider);
                             // console.log("sbProgram: ", sbProgram);
 
-                            // const PLAYER_STATE_SEED = "playerState";
+                            const PLAYER_STATE_SEED = "playerState";
                             // const ESCROW_SEED = "stateEscrow";
 
-                            // const [playerStateAccount, playerStateAccountbump] = await PublicKey.findProgramAddressSync(
-                            //     [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
-                            //     (program as Program).programId
-                            // );
+                            const [playerStateAccount3, playerStateAccountbump] = await PublicKey.findProgramAddressSync(
+                                [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
+                                (program as Program).programId
+                            );
 
                             // const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
                             //     [Buffer.from(ESCROW_SEED)],
@@ -566,7 +604,7 @@ function DieRoll() {
 
                             // console.log('initializing game')
 
-                            await initializeGame((program as Program), playerStateAccount, escrowAccount, innterConnection, wallet, setIsProgramInitializedForAcount);
+                            await initializeGameForUser((program as Program), playerStateAccount3, escrowAccount, innterConnection, wallet, setIsProgramInitializedForAcount);
 
                             console.log('initialized!')
                         }
@@ -600,10 +638,10 @@ function DieRoll() {
                         button.style.boxShadow = "0 6px #d17b00";
                     }}
                 >
-                    Initialize
+                    Initialize Game
                 </button>}
 
-                {!connectedAddress && <button
+                {connectedAddress && <button
                     type="submit"
                     style={{
                         margin: "20px",
@@ -620,7 +658,125 @@ function DieRoll() {
                     }}
                     onClick={async (_e: any) => {
 
+                        const innterConnection = new Connection(clusterApiUrl("devnet"), "confirmed");
+
+                        // Create the wallet provider (you might use Phantom or Sollet wallet in production)
+                        const wallet = (window as any).solana; // Assuming Phantom wallet
+                        // setWallet(wallet);
+
+                        if (wallet) {
+                            // Set up the Anchor provider
+                            // const provider = new AnchorProvider(connection, wallet, {
+                            //     preflightCommitment: "processed",
+                            // });
+
+                            const wallet = window.solana; // Assuming Phantom wallet
+
+                            const provider = new AnchorProvider(innterConnection, wallet, {
+                                preflightCommitment: "processed",
+                            });
+
+                            console.log('pp1 ', program)
+                            console.log('provider ', provider)
+                            console.log('wallet ', wallet)
+                            let queue = await setupQueue(program as Program);
+                            // console.log("queue: ", queue);
+                            // const myProgram = await initializeMyProgram(program!.provider);
+                            console.log("my program: ", program);
+                            const sbProgram = await loadSbProgram((program as Program).provider);
+                            // console.log("sbProgram: ", sbProgram);
+
+                            const PLAYER_STATE_SEED = "playerState";
+                            const ESCROW_SEED = "stateEscrow";
+
+                            const [playerStateAccount, playerStateAccountbump] = await PublicKey.findProgramAddressSync(
+                                [Buffer.from(PLAYER_STATE_SEED), wallet.publicKey.toBuffer()],
+                                (program as Program).programId
+                            );
+                            console.log("playerStateAccount: ", playerStateAccount.toString());
+
+                            const [escrowAccount, escrowBump] = await PublicKey.findProgramAddressSync(
+                                [Buffer.from(ESCROW_SEED)],
+                                (program as Program).programId
+                            );
+                            console.log("escrowAccount: ", escrowAccount.toString());
+
+                            // console.log('initializing game')
+
+                            await initializeGameForUser(
+                                (program as Program),
+                                playerStateAccount,
+                                escrowAccount,
+                                innterConnection,
+                                wallet,
+                                setIsProgramInitializedForAcount
+                            );
+
+                            // await initializeGame((program as Program), playerStateAccount, escrowAccount, innterConnection, wallet, setIsProgramInitializedForAcount);
+
+                            console.log('initialized!')
+                        }
+                        // callInitialize(program, (wallet as any))
+
+
+                        // if (guessInputValue === 0) {
+                        //     setError("Please enter a number between 1 and 6.");
+                        // } else {
+                        //     setError("");
+                        //     setRollResultComment("");
+                        //     console.log("Roll button clicked! Guessing: ", guessInputValue);
+
+                        //     // await initializeProgram();
+
+                        //     const result = await startRoll(+guessInputValue, setRollResult, setRollResultComment);
+
+                        //     // setRollResult(result)
+                        // }
+
+                    }
+                    }
+                    onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                        button.style.transform = "translateY(4px)";
+                        button.style.boxShadow = "0 2px #d17b00";
+                    }}
+                    onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        const button = e.currentTarget; // Explicitly an HTMLButtonElement
+                        button.style.transform = "translateY(0)";
+                        button.style.boxShadow = "0 6px #d17b00";
+                    }}
+                >
+                    Init
+                </button>}
+
+                <button onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    console.log("WTF??");
+                }}>WHAT</button>
+
+                {!connectedAddress && <button
+                    type="submit"
+                    style={{
+                        margin: "20px",
+                        fontSize: "24px",
+                        padding: "15px 30px",
+                        borderRadius: "10px",
+                        background: "linear-gradient(145deg, #ff9800, #ffc107)",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        border: "none",
+                        boxShadow: "0 6px #d17b00",
+                        cursor: "pointer",
+                        transition: "transform 0.2s, box-shadow 0.2s",
+                    }}
+                    onClick={(_e: any) => {
+
                         connectWallet()
+
+                        console.log("foo")
+
+
+                        _e.stopPropagation();
 
                     }}
                     onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -687,5 +843,15 @@ const derivePlayerStatePDA = async (userPublicKey: PublicKey, programId: PublicK
         programId
     );
     return playerState;
+};
+
+const deriveGameAccountPDA = async (programId: PublicKey) => {
+    const [gameState] = await PublicKey.findProgramAddress(
+        [
+            Buffer.from('gameAccount')
+        ],
+        programId
+    );
+    return gameState;
 };
 

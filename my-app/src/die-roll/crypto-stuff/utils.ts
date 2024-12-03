@@ -99,12 +99,10 @@ export async function handleTransaction(
     return sig;
 }
 
-export async function initializeGame(
+export async function initializeGameForUser(
     myProgram: anchor.Program,
     playerStateAccount: PublicKey,
     escrowAccount: PublicKey,
-    // keypair: Keypair,
-    // sbProgram: anchor.Program,
     connection: Connection,
     wallet: anchor.Wallet,
     setIsProgramInitializedForAcount: React.Dispatch<React.SetStateAction<boolean>>
@@ -140,13 +138,13 @@ export async function initializeGame(
             skipPreflight: true,
             preflightCommitment: "confirmed"
         });
-        
+
         console.log("Transaction sent:", txId);
-        
+
         // Confirm transaction
         await connection.confirmTransaction(txId, "confirmed");
         console.log("Transaction confirmed!");
-       
+
         setIsProgramInitializedForAcount(true)
 
     }
@@ -179,20 +177,58 @@ export /**
         rngKpPublicKey: PublicKey,
         userGuess: number,
         playerStateAccount: PublicKey,
+        gameAccount: PublicKey,
         // keypair: Keypair,
         escrowAccount: PublicKey,
         wallet: anchor.Wallet,
     ): Promise<anchor.web3.TransactionInstruction> {
-    return await myProgram.methods
-        .coinFlip(rngKpPublicKey, userGuess)
+    console.log('creating!!')
+
+    console.log('wallet: {}', wallet);
+    console.log('wallet address: {}', wallet.publicKey.toString());
+    console.log('program ID: {}', myProgram.programId.toString());
+    console.log('playerStateAccount: {}', playerStateAccount.toString());
+    console.log('userGuess: {}', userGuess);
+    console.log('gameAccount: {}', gameAccount.toString());
+
+    // const PLAYER_STATE_SEED = "playerState";
+
+    // const [playerStateAccount2, bump] = await PublicKey.findProgramAddress(
+    //     [
+    //         Buffer.from(PLAYER_STATE_SEED), // Match the program seed
+    //         wallet.publicKey.toBuffer() // Match the user key
+    //     ],
+    //     myProgram.programId // Program ID must match the deployed program
+    // );
+
+    // console.log("Derived playerStateAccount:", playerStateAccount2.toBase58());
+    // console.log("Derived playerStateAccount:", playerStateAccount.toBase58());
+
+    try {
+    let p = await myProgram.methods
+
+
+        // .coinFlip(rngKpPublicKey, userGuess, 10_000_000)
+        .coinFlip(rngKpPublicKey, new anchor.BN(userGuess), new anchor.BN(10_000_000))
         .accounts({
             playerState: playerStateAccount,
+            gameAccount: gameAccount,
             user: wallet.publicKey,
             randomnessAccountData: rngKpPublicKey,
             escrowAccount: escrowAccount,
             systemProgram: SystemProgram.programId,
         })
         .instruction();
+        console.log('created.')
+        return p;
+    }
+
+    catch(err) {
+        console.log("err creating: " + err)
+
+        throw err
+    }
+
 }
 
 /**

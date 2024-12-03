@@ -3,23 +3,15 @@ import {
     Connection,
     PublicKey,
     Keypair,
-    SystemProgram,
     Commitment,
     clusterApiUrl,
-    Transaction,
 } from "@solana/web3.js";
 import * as sb from "@switchboard-xyz/on-demand";
-import { initializeGame, loadSbProgram } from "./utils";
+import { loadSbProgram } from "./utils";
 import { setupQueue } from "./utils";
-import { initializeMyProgram } from "./utils";
 import { createCoinFlipInstruction } from "./utils";
 import { settleFlipInstruction } from "./utils";
-import { ensureEscrowFunded } from "./utils";
-// import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
-import idl from '../../sb_randomness.json';
 import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
-
-
 
 // const ESCROW_SEED = "stateEscrow";
 // const COMMITMENT = "confirmed";
@@ -29,7 +21,7 @@ const COMMITMENT = "confirmed" as Commitment;
 
 async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.SetStateAction<string>>,
     setResultComment: React.Dispatch<React.SetStateAction<string>>, playerStateAccount: PublicKey,
-    escrowAccount: PublicKey, escrowBump: number
+    gameAccount: PublicKey, escrowAccount: PublicKey, escrowBump: number
 ): Promise<number> {
 
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
@@ -87,7 +79,7 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
 
 
 
-        const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
+        const programId = new PublicKey('9zYgmAvDrAi64rLuThmCTGF5StSwiRooV3e5k4nd7AAP');
 
         const idl = (await Program.fetchIdl(programId, provider))!;
 
@@ -106,7 +98,7 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
             // console.log("Program initialized:", program);
             // console.log("program: ", program)
 
-            const programId = new PublicKey('3gHtqUaKGu3RJCWVbgQFd5Gv4MQfQKmQjKSvdejkLoA7');
+            const programId = new PublicKey('9zYgmAvDrAi64rLuThmCTGF5StSwiRooV3e5k4nd7AAP');
 
             // Use Program.at() instead of fetchIdl
             // const program = await Program.at(programId, provider);
@@ -166,7 +158,7 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
                 console.log(program);
 
 
-                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult, setResultComment, playerStateAccount, escrowAccount, escrowBump)
+                return await startRollg(program, wallet.keypair, connection, wallet, userGuess, setRollResult, setResultComment, playerStateAccount, gameAccount, escrowAccount, escrowBump)
             }
             // try {
             //     const greetingAccount = Keypair.generate();
@@ -223,7 +215,7 @@ async function startRoll(userGuess: number, setRollResult: React.Dispatch<React.
 /// takes a guess, calls to blockchain, returns the result.
 async function startRollg(program: any, keypair: Keypair, connection: Connection, wallet: Wallet, userGuess: number,
     setRollResult: React.Dispatch<React.SetStateAction<string>>, setResultComment: React.Dispatch<React.SetStateAction<string>>,
-playerStateAccount: PublicKey, escrowAccount: PublicKey, escrowBump: number): Promise<number> {
+playerStateAccount: PublicKey, gameAccount: PublicKey, escrowAccount: PublicKey, escrowBump: number): Promise<number> {
     // console.clear();
     // const { keypair, connection, program } = await sb.AnchorUtils.loadEnv();
     // console.log("\nSetup...");
@@ -392,14 +384,19 @@ playerStateAccount: PublicKey, escrowAccount: PublicKey, escrowBump: number): Pr
                     console.log("program: ", program)
                     console.log("usergues: ", userGuess)
                     console.log("playerStateAccount: ", playerStateAccount)
+                    console.log("playerStateAccount: ", JSON.stringify(playerStateAccount))
                     // console.log("wallet.payer: ", wallet.payer)
                     console.log("escrowAccount: ", escrowAccount)
+
+                    
+
 
                     const coinFlipIx = await createCoinFlipInstruction(
                         program,
                         rngKp.publicKey,
                         userGuess,
                         playerStateAccount,
+                        gameAccount,
                         // wallet.payer,
                         escrowAccount,
                         wallet
