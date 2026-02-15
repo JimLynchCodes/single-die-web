@@ -8,7 +8,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.35",
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/web3.js": "1.95.4",
-    "@switchboard-xyz/on-demand": "^1.2.51",
+    "@switchboard-xyz/on-demand": "^2.0.0",
     "@switchboard-xyz/solana.js": "^3.2.5",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -34,7 +34,7 @@
     "typescript": "^4.9.5",
     "util": "^0.12.5",
     "web-vitals": "^2.1.4",
-    "webpack": "^5.96.1",
+    "webpack": "^5.98.0",
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
